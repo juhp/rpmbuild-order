@@ -33,6 +33,7 @@ Build-Type:        Simple
 
 Executable rpmbuild-order
   Build-Depends:
+    base,
     Cabal,
     containers,
     directory,
@@ -40,8 +41,7 @@ Executable rpmbuild-order
     filepath,
     fgl, 
     process,
-    transformers,
-    base
+    transformers
 
   GHC-Options:      -Wall
   Hs-source-dirs:   src
