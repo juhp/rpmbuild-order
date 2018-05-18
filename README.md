@@ -9,3 +9,18 @@ This package based on code from [cabal-sort](http://hackage.haskell.org/package/
     mylib
     mycore
     myapp
+
+In order to not get bored you may run the program with `--verbose=2` option.
+
+## Known problems
+Given packages A, B, C, where C depends on B and B depends on A,
+and you call
+.
+> rpmbuild-order C.spec A.spec
+.
+then the emitted order of packages may be wrong,
+because rpmbuild-order does not get to know the dependency of C on B.
+Even if the order is correct, B.spec is missing in the output
+and thus the list of spec files cannot immediately be used
+for a sequence of builds.
+

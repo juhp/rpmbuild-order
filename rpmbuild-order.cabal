@@ -1,5 +1,5 @@
 Name:             rpmbuild-order
-Version:          0.0.1.0
+Version:          0.1
 License:          BSD3
 License-File:     LICENSE
 Author:           Henning Thielemann <haskell@henning-thielemann.de>
@@ -7,27 +7,15 @@ Maintainer:       Jens Petersen <petersen@redhat.com>
 Category:         Distribution
 Synopsis:         Topologically sort RPM packages
 Description:
-  If you have a bunch of packages you want build,
+  If you have a bunch of packages you want to build,
   then you should build them in dependency order.
-  Given a number of RPM spec files, this program reads all those files
+  Given a number of RPM spec files, this program reads all the files
   and emits them topologically sorted according to their dependencies.
   This way you can compile many packages at once,
-  say if a very low-level package has changed.
-  .
-  Problem 1: Given packages A, B, C,
-  where C depends on B and B depends on A,
-  and you call
-  .
-  > cabal-sort C.spec A.spec
-  .
-  then the emitted order of packages may be wrong,
-  because cabal-sort does not get to know the dependency of C on B.
-  Even if the order is correct, B.spec is missing in the output
-  and thus the list of spec files cannot immediately be used
-  for a sequence of builds.
-  .
-  In order to not get bored you may run the program with @--verbose=2@ option.
-Tested-With:       GHC==6.10.4, GHC==6.12.3
+  say if a low-level package has changed.
+Tested-with:       GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,
+                   GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2,
+                   GHC == 8.4.2
 Cabal-Version:     >=1.6
 Build-Type:        Simple
 
