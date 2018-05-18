@@ -11,7 +11,7 @@ import System.Exit (exitSuccess, exitFailure, )
 import qualified System.Environment as Env
 import System.FilePath
 
-import System.Directory (doesDirectoryExist)
+import System.Directory (doesDirectoryExist, doesFileExist)
 import System.IO (hPutStrLn, stderr)
 import System.Process (readProcess)
 
@@ -25,7 +25,7 @@ import qualified Control.Monad.Trans.Class as Trans
 import qualified Data.Set as Set
 import Control.Monad (guard, when, unless)
 import Data.Maybe (fromMaybe, mapMaybe)
-import Data.List (delete, stripPrefix)
+import Data.List (delete, intersperse, stripPrefix)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -46,7 +46,7 @@ main =
                 Flags {optHelp = False,
                        optVerbosity = Verbosity.silent,
                        optFormat = name,
-                       optParallel = False,
+                       optParallel = Nothing,
                        optBranch = Nothing})
                opts
       when (optHelp flags)
@@ -68,22 +68,29 @@ handleException msg = do
 findSpec :: Maybe FilePath -> FilePath -> IO FilePath
 findSpec mdir file =
   if takeExtension file == ".spec"
-    then return file
+    then checkFile file
     else do
     dirp <- doesDirectoryExist file
     if dirp
       then
       let dir = maybe file (file </>) mdir
           pkg = takeBaseName file in
-        return $ dir </> pkg ++ ".spec"
+        checkFile $ dir </> pkg ++ ".spec"
       else error $ "Not spec file or directory: " ++ file
+  where
+    checkFile :: FilePath -> IO FilePath
+    checkFile file = do
+      e <- doesFileExist file
+      if e
+        then return file
+        else error $ file ++ " not found"
 
 data Flags =
    Flags {
       optHelp :: Bool,
       optVerbosity :: Verbosity.Verbosity,
       optFormat :: SourcePackage -> String,
-      optParallel :: Bool,
+      optParallel :: Maybe String,
       optBranch :: Maybe FilePath
    }
 
@@ -93,14 +100,20 @@ options =
     Option ['h'] ["help"]
       (NoArg (\flags -> return $ flags{optHelp = True}))
       "show options"
-  , Option ['v'] ["verbose"]
+  , Option ['p'] ["parallel"]
+      (OptArg
+        (\mstr flags ->
+            fmap (\cs -> flags{optParallel = Just cs})
+            (Exc.Success (fromMaybe " " mstr)))
+         "SEPARATOR")
+      "Display independently buildable groups of packages, optionally with separator"
+  , Option ['b'] ["branch"]
       (ReqArg
          (\str flags ->
-            fmap (\n -> flags{optVerbosity = n}) $
-            Exc.fromEither $
-            ReadE.runReadE Verbosity.flagToVerbosity str)
-         "N")
-      "verbosity level: 0..3"
+            fmap (\mb -> flags{optBranch = mb})
+            (Exc.Success (Just str)))
+         "BRANCHDIR")
+    "branch directory"
   , Option ['f'] ["format"]
       (ReqArg
          (\str flags ->
@@ -114,16 +127,14 @@ options =
                   "unknown info type " ++ str)
          "KIND")
       "output format: 'package' (default), 'spec', or 'dir'"
-  , Option ['p'] ["parallel"]
-      (NoArg (\flags -> return $ flags{optParallel = True}))
-      "Display independently buildable groups of packages"
-  , Option ['b'] ["branch"]
+  , Option ['v'] ["verbose"]
       (ReqArg
          (\str flags ->
-            fmap (\mb -> flags{optBranch = mb})
-            (Exc.Success (Just str)))
-         "BRANCHDIR")
-    "branch directory"
+            fmap (\n -> flags{optVerbosity = n}) $
+            Exc.fromEither $
+            ReadE.runReadE Verbosity.flagToVerbosity str)
+         "N")
+      "verbosity level: 0..3"
   ]
 
 data SourcePackage =
@@ -148,13 +159,13 @@ sortSpecFiles flags specPaths = do
           graph = getBuildGraph pkgs
       checkForCycles graph
       Trans.lift $
-         if optParallel flags
-              then
-                 mapM_ ((putStrLn . unwords . map (optFormat flags)) .
+         case optParallel flags of
+           Just s ->
+             mapM_ ((putStrLn . unwords . intersperse s . map (optFormat flags)) .
                          topsort' . subgraph graph)
                  (components graph)
-              else
-                 mapM_ (putStrLn . optFormat flags) $ topsort' graph
+           Nothing ->
+             mapM_ (putStrLn . optFormat flags) $ topsort' graph
  
 readProvides :: Verbosity.Verbosity -> FilePath -> IO [String]
 readProvides verbose file = do
