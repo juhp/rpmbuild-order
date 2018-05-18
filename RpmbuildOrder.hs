@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Main where
 
 import qualified Distribution.Verbosity as Verbosity
@@ -236,5 +238,7 @@ subgraph graph nodes =
 
 getCycles :: Gr a b -> [[Graph.Node]]
 getCycles =
-   filter (\component -> case component of _:_:_ -> True; _ -> False) .
-   scc
+   filter (\case
+              _:_:_ -> True
+              _ -> False)
+   . scc
