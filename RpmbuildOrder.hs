@@ -23,6 +23,10 @@ import Control.Monad (guard, when, unless)
 import Data.Maybe (fromMaybe, mapMaybe, )
 import Data.List (stripPrefix)
 
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
+#else
+import Control.Applicative ((<$>))
+#endif
 
 main :: IO ()
 main =
