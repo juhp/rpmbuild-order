@@ -21,8 +21,8 @@ import qualified Control.Monad.Trans.Class as Trans
 
 import qualified Data.Set as Set
 import Control.Monad (guard, when, unless)
-import Data.Maybe (fromMaybe, mapMaybe, )
-import Data.List (stripPrefix)
+import Data.Maybe (fromMaybe, mapMaybe)
+import Data.List (delete, stripPrefix)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -112,9 +112,13 @@ data SourcePackage =
 sortSpecFiles :: Flags -> [FilePath] -> Exc.ExceptionalT String IO ()
 sortSpecFiles flags specPaths = do
       let names = map takeBaseName specPaths
+      provs <-
+         Trans.lift $
+         mapM (readProvides (optVerbosity flags)) specPaths
+      let resolves = zip names provs
       deps <-
          Trans.lift $
-         mapM (readDependencies (optVerbosity flags)) specPaths
+         mapM (getDepsSrcResolved (optVerbosity flags) resolves) specPaths
       let pkgs = zipWith3 SourcePackage specPaths names deps
           graph = getBuildGraph pkgs
       checkForCycles graph
@@ -127,11 +131,30 @@ sortSpecFiles flags specPaths = do
               else
                  mapM_ (putStrLn . optInfo flags) $ topsort' graph
  
+readProvides :: Verbosity.Verbosity -> FilePath -> IO [String]
+readProvides verbose file = do
+  when (verbose >= Verbosity.verbose) $ hPutStrLn stderr file
+  pkgs <- lines <$>
+    rpmspec ["--rpms", "--qf=%{name}\n", "--define", "ghc_version any"] Nothing file
+  let name = takeBaseName file
+  return $ delete name pkgs
+
 readDependencies :: Verbosity.Verbosity -> FilePath -> IO [String]
 readDependencies verbose file = do
   when (verbose >= Verbosity.verbose) $ hPutStrLn stderr file
-  map (removeSuffix "-devel") . lines <$>
-    rpmspec ["--buildrequires", "--define", "ghc_version 8"] Nothing file
+  lines <$>
+    rpmspec ["--buildrequires", "--define", "ghc_version any"] Nothing file
+
+getDepsSrcResolved :: Verbosity.Verbosity -> [(String,[String])] -> FilePath -> IO [String]
+getDepsSrcResolved verbose provides file =
+  map (resolveBase provides) <$> readDependencies verbose file
+
+resolveBase :: [(String,[String])] -> String -> String
+resolveBase provs br =
+  case mapMaybe (\ (pkg,subs) -> if br `elem` subs then Just pkg else Nothing) provs of
+    [] -> br
+    [p] -> p
+    _ -> error $ "More than one package provides " ++ br
 
 removeSuffix :: String -> String -> String
 removeSuffix suffix orig =
