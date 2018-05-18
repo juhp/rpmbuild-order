@@ -7,7 +7,7 @@ import System.Console.GetOpt
           (getOpt, ArgOrder(..), OptDescr(..), ArgDescr(..), usageInfo, )
 import System.Exit (exitSuccess, exitFailure, )
 import qualified System.Environment as Env
-import qualified System.FilePath as FilePath
+import System.FilePath
 
 import System.Process (readProcess)
 
@@ -87,10 +87,9 @@ options =
          (\str flags ->
             fmap (\select -> flags{optInfo = select}) $
             case str of
-               "name" -> Exc.Success
-                            (FilePath.takeFileName . location)
+               "name" -> Exc.Success name
                "path" -> Exc.Success location
-               "dir"  -> Exc.Success (FilePath.takeDirectory . location)
+               "dir"  -> Exc.Success (takeDirectory . location)
                _ ->
                   Exc.Exception $
                   "unknown info type " ++ str)
