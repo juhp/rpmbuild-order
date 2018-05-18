@@ -9,9 +9,9 @@ Synopsis:         Topologically sort RPM packages
 Description:
   If you have a bunch of packages you want to build,
   then you should build them in dependency order.
-  Given a number of RPM spec files, this program reads all the files
-  and emits them topologically sorted according to their dependencies.
-  This way you can compile many packages at once,
+  This program reads RPM package spec files
+  and prints them in topologically sorted according to their dependencies.
+  This allows one to build them in correct dependency order at once,
   say if a low-level package has changed.
 Tested-with:       GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,
                    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2,

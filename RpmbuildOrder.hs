@@ -11,6 +11,7 @@ import System.Exit (exitSuccess, exitFailure, )
 import qualified System.Environment as Env
 import System.FilePath
 
+import System.Directory (doesDirectoryExist)
 import System.IO (hPutStrLn, stderr)
 import System.Process (readProcess)
 
@@ -35,7 +36,7 @@ main :: IO ()
 main =
    Exc.resolveT handleException $ do
       argv <- Trans.lift Env.getArgs
-      let (opts, specPaths, errors) =
+      let (opts, pkgs, errors) =
              getOpt RequireOrder options argv
       unless (null errors) $ Exc.throwT $ concat errors
       flags <-
@@ -45,30 +46,45 @@ main =
                 Flags {optHelp = False,
                        optVerbosity = Verbosity.silent,
                        optInfo = name,
-                       optParallel = False})
+                       optParallel = False,
+                       optBranch = Nothing})
                opts
       when (optHelp flags)
          (Trans.lift $
           Env.getProgName >>= \programName ->
           putStrLn
              (usageInfo ("Usage: " ++ programName ++
-                         " [OPTIONS] SPEC-FILES ...") options) >>
+                         " [OPTIONS] PKG-SPEC-OR-DIR ...") options) >>
           exitSuccess)
 
-      sortSpecFiles flags specPaths
+      Trans.lift (mapM (findSpec (optBranch flags)) pkgs)
+        >>= sortSpecFiles flags
 
 handleException :: String -> IO ()
 handleException msg = do
    putStrLn $ "Aborted: " ++ msg
    exitFailure
 
+findSpec :: Maybe FilePath -> FilePath -> IO FilePath
+findSpec mdir file =
+  if takeExtension file == ".spec"
+    then return file
+    else do
+    dirp <- doesDirectoryExist file
+    if dirp
+      then
+      let dir = maybe file (file </>) mdir
+          pkg = takeBaseName file in
+        return $ dir </> pkg ++ ".spec"
+      else error $ "Not spec file or directory: " ++ file
 
 data Flags =
    Flags {
       optHelp :: Bool,
       optVerbosity :: Verbosity.Verbosity,
       optInfo :: SourcePackage -> String,
-      optParallel :: Bool
+      optParallel :: Bool,
+      optBranch :: Maybe FilePath
    }
 
 options :: [OptDescr (Flags -> Exc.Exceptional String Flags)]
@@ -101,6 +117,13 @@ options =
   , Option ['p'] ["parallel"]
       (NoArg (\flags -> return $ flags{optParallel = True}))
       "Display independently buildable groups of packages"
+  , Option ['b'] ["branch"]
+      (ReqArg
+         (\str flags ->
+            fmap (\mb -> flags{optBranch = mb})
+            (Exc.Success (Just str)))
+         "BRANCHDIR")
+    "branch directory"
   ]
 
 data SourcePackage =

@@ -5,15 +5,13 @@
 This package based on code from [cabal-sort](http://hackage.haskell.org/package/cabal-sort), sorts rpm package spec files by build order.
 
     $ rpmbuild-order --help
-    $ rpmbuild-order mycore.spec mylib.spec myapp.spec
+    $ rpmbuild-order mycore mylib myapp
     mylib
     mycore
     myapp
 
-In order to not get bored you may run the program with `--verbose=2` option.
-
 ## Known problems
-Given packages A, B, C, where C depends on B and B depends on A,
+Given packages A, B, C, where C depends on B, and B depends on A,
 and you call
 .
 > rpmbuild-order C.spec A.spec
