@@ -45,7 +45,7 @@ main =
                (return
                 Flags {optHelp = False,
                        optVerbosity = Verbosity.silent,
-                       optInfo = name,
+                       optFormat = name,
                        optParallel = False,
                        optBranch = Nothing})
                opts
@@ -82,7 +82,7 @@ data Flags =
    Flags {
       optHelp :: Bool,
       optVerbosity :: Verbosity.Verbosity,
-      optInfo :: SourcePackage -> String,
+      optFormat :: SourcePackage -> String,
       optParallel :: Bool,
       optBranch :: Maybe FilePath
    }
@@ -101,19 +101,19 @@ options =
             ReadE.runReadE Verbosity.flagToVerbosity str)
          "N")
       "verbosity level: 0..3"
-  , Option [] ["info"]
+  , Option ['f'] ["format"]
       (ReqArg
          (\str flags ->
-            fmap (\select -> flags{optInfo = select}) $
+            fmap (\select -> flags{optFormat = select}) $
             case str of
-               "name" -> Exc.Success name
-               "path" -> Exc.Success location
+               "package" -> Exc.Success name
+               "spec" -> Exc.Success location
                "dir"  -> Exc.Success (takeDirectory . location)
                _ ->
                   Exc.Exception $
                   "unknown info type " ++ str)
          "KIND")
-      "kind of output: name, path, dir"
+      "output format: 'package' (default), 'spec', or 'dir'"
   , Option ['p'] ["parallel"]
       (NoArg (\flags -> return $ flags{optParallel = True}))
       "Display independently buildable groups of packages"
@@ -150,11 +150,11 @@ sortSpecFiles flags specPaths = do
       Trans.lift $
          if optParallel flags
               then
-                 mapM_ ((putStrLn . unwords . map (optInfo flags)) .
+                 mapM_ ((putStrLn . unwords . map (optFormat flags)) .
                          topsort' . subgraph graph)
                  (components graph)
               else
-                 mapM_ (putStrLn . optInfo flags) $ topsort' graph
+                 mapM_ (putStrLn . optFormat flags) $ topsort' graph
  
 readProvides :: Verbosity.Verbosity -> FilePath -> IO [String]
 readProvides verbose file = do
