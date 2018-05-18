@@ -9,6 +9,7 @@ import System.Exit (exitSuccess, exitFailure, )
 import qualified System.Environment as Env
 import System.FilePath
 
+import System.IO (hPutStrLn, stderr)
 import System.Process (readProcess)
 
 import Data.Graph.Inductive.Query.DFS (topsort', scc, components, )
@@ -110,9 +111,7 @@ data SourcePackage =
 
 sortSpecFiles :: Flags -> [FilePath] -> Exc.ExceptionalT String IO ()
 sortSpecFiles flags specPaths = do
-      names <- 
-         Trans.lift $
-         mapM (readNames (optVerbosity flags)) specPaths
+      let names = map takeBaseName specPaths
       deps <-
          Trans.lift $
          mapM (readDependencies (optVerbosity flags)) specPaths
@@ -128,11 +127,11 @@ sortSpecFiles flags specPaths = do
               else
                  mapM_ (putStrLn . optInfo flags) $ topsort' graph
  
-readNames :: Verbosity.Verbosity -> FilePath -> IO String
-readNames _ = rpmspec ["--srpm"] (Just "%{name}")
-
 readDependencies :: Verbosity.Verbosity -> FilePath -> IO [String]
-readDependencies _ file = map (removeSuffix "-devel") . lines <$> rpmspec ["--buildrequires"] Nothing file
+readDependencies verbose file = do
+  when (verbose >= Verbosity.verbose) $ hPutStrLn stderr file
+  map (removeSuffix "-devel") . lines <$>
+    rpmspec ["--buildrequires", "--define", "ghc_version 8"] Nothing file
 
 removeSuffix :: String -> String -> String
 removeSuffix suffix orig =
