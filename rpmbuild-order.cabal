@@ -44,5 +44,4 @@ Executable rpmbuild-order
     transformers
 
   GHC-Options:      -Wall
-  Hs-source-dirs:   src
   Main-Is:          RpmbuildOrder.hs
