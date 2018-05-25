@@ -10,6 +10,11 @@ This package based on code from [cabal-sort](http://hackage.haskell.org/package/
     mycore
     myapp
 
+The arguments passed can either be directories named after the package, or spec files.
+
+By default it outputs the package names, but it can also output
+the spec filenames or directory paths for easier scripting.
+
 ## Known problems
 Given packages A, B, C, where C depends on B, and B depends on A,
 and you call
