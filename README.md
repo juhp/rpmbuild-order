@@ -22,7 +22,7 @@ and you call
     rpmbuild-order C.spec A.spec
 
 then the output may be wrong if C does not have a direct dependency on A.
-Even if the order is correct, B.spec is missing in the output
+Even if the order is correct, B is missing in the output
 and thus in this case the list of packages cannot be reliably used
 for a sequence of builds.
 

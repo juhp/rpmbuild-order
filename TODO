@@ -1,1 +1,3 @@
 - support dead.package?
+
+- port GhcPkgDep.hs

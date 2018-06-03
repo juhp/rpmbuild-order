@@ -33,4 +33,4 @@ Executable rpmbuild-order
 
   GHC-Options:      -Wall
   Main-Is:          RpmbuildOrder.hs
-  Extensions:         CPP
+  Extensions:       CPP
