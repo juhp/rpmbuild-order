@@ -19,8 +19,8 @@ import Data.Graph.Inductive.Query.DFS (topsort', scc, components, )
 import Data.Graph.Inductive.Tree (Gr, )
 import qualified Data.Graph.Inductive.Graph as Graph
 
-import qualified Control.Monad.Exception.Synchronous as Exc
-import qualified Control.Monad.Trans.Class as Trans
+import qualified Control.Monad.Exception.Synchronous as E
+import qualified Control.Monad.Trans.Class as T
 
 import qualified Data.Set as Set
 import Control.Monad (guard, when, unless)
@@ -34,30 +34,30 @@ import Control.Applicative ((<$>))
 
 main :: IO ()
 main =
-   Exc.resolveT handleException $ do
-      argv <- Trans.lift Env.getArgs
+   E.resolveT handleException $ do
+      argv <- T.lift Env.getArgs
       let (opts, pkgs, errors) =
              getOpt RequireOrder options argv
-      unless (null errors) $ Exc.throwT $ concat errors
+      unless (null errors) $ E.throwT $ concat errors
       flags <-
-         Exc.ExceptionalT $ return $
+         E.ExceptionalT $ return $
             foldr (=<<)
                (return
                 Flags {optHelp = False,
                        optVerbosity = Verbosity.silent,
-                       optFormat = name,
+                       optFormat = package,
                        optParallel = Nothing,
                        optBranch = Nothing})
                opts
       when (optHelp flags)
-         (Trans.lift $
+         (T.lift $
           Env.getProgName >>= \programName ->
           putStrLn
              (usageInfo ("Usage: " ++ programName ++
                          " [OPTIONS] PKG-SPEC-OR-DIR ...") options) >>
           exitSuccess)
 
-      Trans.lift (mapM (findSpec (optBranch flags)) pkgs)
+      T.lift (mapM (findSpec (optBranch flags)) pkgs)
         >>= sortSpecFiles flags
 
 handleException :: String -> IO ()
@@ -79,11 +79,11 @@ findSpec mdir file =
       else error $ "Not spec file or directory: " ++ file
   where
     checkFile :: FilePath -> IO FilePath
-    checkFile file = do
-      e <- doesFileExist file
+    checkFile f = do
+      e <- doesFileExist f
       if e
-        then return file
-        else error $ file ++ " not found"
+        then return f
+        else error $ f ++ " not found"
 
 data Flags =
    Flags {
@@ -94,24 +94,24 @@ data Flags =
       optBranch :: Maybe FilePath
    }
 
-options :: [OptDescr (Flags -> Exc.Exceptional String Flags)]
+options :: [OptDescr (Flags -> E.Exceptional String Flags)]
 options =
   [
     Option ['h'] ["help"]
       (NoArg (\flags -> return $ flags{optHelp = True}))
-      "show options"
+      "Show options"
   , Option ['p'] ["parallel"]
       (OptArg
         (\mstr flags ->
             fmap (\cs -> flags{optParallel = Just cs})
-            (Exc.Success (fromMaybe " " mstr)))
+            (E.Success (fromMaybe "" mstr)))
          "SEPARATOR")
       "Display independently buildable groups of packages, optionally with separator"
   , Option ['b'] ["branch"]
       (ReqArg
          (\str flags ->
             fmap (\mb -> flags{optBranch = mb})
-            (Exc.Success (Just str)))
+            (E.Success (Just str)))
          "BRANCHDIR")
     "branch directory"
   , Option ['f'] ["format"]
@@ -119,11 +119,11 @@ options =
          (\str flags ->
             fmap (\select -> flags{optFormat = select}) $
             case str of
-               "package" -> Exc.Success name
-               "spec" -> Exc.Success location
-               "dir"  -> Exc.Success (takeDirectory . location)
+               "package" -> E.Success package
+               "spec" -> E.Success location
+               "dir"  -> E.Success (takeDirectory . location)
                _ ->
-                  Exc.Exception $
+                  E.Exception $
                   "unknown info type " ++ str)
          "KIND")
       "output format: 'package' (default), 'spec', or 'dir'"
@@ -131,7 +131,7 @@ options =
       (ReqArg
          (\str flags ->
             fmap (\n -> flags{optVerbosity = n}) $
-            Exc.fromEither $
+            E.fromEither $
             ReadE.runReadE Verbosity.flagToVerbosity str)
          "N")
       "verbosity level: 0..3"
@@ -140,28 +140,28 @@ options =
 data SourcePackage =
    SourcePackage {
       location :: FilePath,
-      name :: String,
+      package :: String,
       dependencies :: [String]
    }
    deriving (Show, Eq)
 
-sortSpecFiles :: Flags -> [FilePath] -> Exc.ExceptionalT String IO ()
+sortSpecFiles :: Flags -> [FilePath] -> E.ExceptionalT String IO ()
 sortSpecFiles flags specPaths = do
       let names = map takeBaseName specPaths
       provs <-
-         Trans.lift $
+         T.lift $
          mapM (readProvides (optVerbosity flags)) specPaths
       let resolves = zip names provs
       deps <-
-         Trans.lift $
+         T.lift $
          mapM (getDepsSrcResolved (optVerbosity flags) resolves) specPaths
       let pkgs = zipWith3 SourcePackage specPaths names deps
           graph = getBuildGraph pkgs
       checkForCycles graph
-      Trans.lift $
+      T.lift $
          case optParallel flags of
            Just s ->
-             mapM_ ((putStrLn . unwords . intersperse s . map (optFormat flags)) .
+             mapM_ ((putStrLn . unwords . (if null s then id else intersperse s) . map (optFormat flags)) .
                          topsort' . subgraph graph)
                  (components graph)
            Nothing ->
@@ -172,8 +172,8 @@ readProvides verbose file = do
   when (verbose >= Verbosity.verbose) $ hPutStrLn stderr file
   pkgs <- lines <$>
     rpmspec ["--rpms", "--qf=%{name}\n", "--define", "ghc_version any"] Nothing file
-  let name = takeBaseName file
-  return $ delete name pkgs
+  let pkg = takeBaseName file
+  return $ delete pkg pkgs
 
 readDependencies :: Verbosity.Verbosity -> FilePath -> IO [String]
 readDependencies verbose file = do
@@ -232,7 +232,7 @@ getBuildGraph srcPkgs =
    let nodes = zip [0..] srcPkgs
        nodeDict =
           zip
-             (map name srcPkgs)
+             (map package srcPkgs)
              [0..]
        edges = do
           (srcNode,srcPkg) <- nodes
@@ -246,12 +246,12 @@ getBuildGraph srcPkgs =
 checkForCycles ::
    Monad m =>
    Gr SourcePackage () ->
-   Exc.ExceptionalT String m ()
+   E.ExceptionalT String m ()
 checkForCycles graph =
    case getCycles graph of
       [] -> return ()
       cycles ->
-         Exc.throwT $ unlines $
+         E.throwT $ unlines $
          "Cycles in dependencies:" :
          map (unwords . map location . nodeLabels graph) cycles
 
