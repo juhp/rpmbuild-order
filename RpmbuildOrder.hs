@@ -6,17 +6,17 @@ import qualified Distribution.Verbosity as Verbosity
 import qualified Distribution.ReadE as ReadE
 
 import System.Console.GetOpt
-          (getOpt, ArgOrder(..), OptDescr(..), ArgDescr(..), usageInfo, )
-import System.Exit (exitSuccess, exitFailure, )
+          (getOpt, ArgOrder(..), OptDescr(..), ArgDescr(..), usageInfo)
+import System.Exit (exitSuccess, exitFailure)
 import qualified System.Environment as Env
 import System.FilePath
 
-import System.Directory (doesDirectoryExist, doesFileExist)
+import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
 import System.IO (hPutStrLn, stderr)
 import System.Process (readProcess)
 
-import Data.Graph.Inductive.Query.DFS (topsort', scc, components, )
-import Data.Graph.Inductive.Tree (Gr, )
+import Data.Graph.Inductive.Query.DFS (xdfsWith, topsort', scc, components)
+import Data.Graph.Inductive.Tree (Gr)
 import qualified Data.Graph.Inductive.Graph as Graph
 
 import qualified Control.Monad.Exception.Synchronous as E
@@ -24,7 +24,7 @@ import qualified Control.Monad.Trans.Class as T
 
 import qualified Data.Set as Set
 import Control.Monad (guard, when, unless)
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import Data.List (delete, intersperse, stripPrefix)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
@@ -34,11 +34,16 @@ import Control.Applicative ((<$>))
 
 main :: IO ()
 main =
-   E.resolveT handleException $ do
-      argv <- T.lift Env.getArgs
-      let (opts, pkgs, errors) =
-             getOpt RequireOrder options argv
+  E.resolveT handleException $ do
+  argv <- T.lift Env.getArgs
+  let (opts, args, errors) = getOpt RequireOrder options argv
+  if length args < 2
+    then T.lift $ help >> exitFailure
+    else do
+      let (com:pkgs) = args
       unless (null errors) $ E.throwT $ concat errors
+      unless (com `elem` ["sort", "deps", "rdeps"]) $
+        E.throwT $ "Unknown command " ++ com
       flags <-
          E.ExceptionalT $ return $
             foldr (=<<)
@@ -50,22 +55,22 @@ main =
                        optBranch = Nothing})
                opts
       when (optHelp flags)
-         (T.lift $
-          Env.getProgName >>= \programName ->
-          putStrLn
-             (usageInfo ("Usage: " ++ programName ++
-                         " [OPTIONS] PKG-SPEC-OR-DIR ...") options) >>
-          exitSuccess)
+         (T.lift $ help >> exitSuccess)
 
-      T.lift (mapM (findSpec (optBranch flags) . (removeSuffix "/")) (filter (/= fromMaybe "" (optParallel flags)) pkgs))
-        >>= sortSpecFiles flags
+      runCommand flags com $ map (removeSuffix "/") pkgs
+  where
+    help =
+      Env.getProgName >>= \programName ->
+        putStrLn
+             (usageInfo ("Usage: " ++ programName ++
+                         " [OPTIONS] [sort|deps|rdeps] PKG-SPEC-OR-DIR ...") options)
 
 handleException :: String -> IO ()
 handleException msg = do
    putStrLn $ "Aborted: " ++ msg
    exitFailure
 
-findSpec :: Maybe FilePath -> FilePath -> IO FilePath
+findSpec :: Maybe FilePath -> FilePath -> IO (Maybe FilePath)
 findSpec mdir file =
   if takeExtension file == ".spec"
     then checkFile file
@@ -76,14 +81,14 @@ findSpec mdir file =
       let dir = maybe file (file </>) mdir
           pkg = takeBaseName file in
         checkFile $ dir </> pkg ++ ".spec"
-      else error $ "Not spec file or directory: " ++ file
+      else return Nothing
   where
-    checkFile :: FilePath -> IO FilePath
+    checkFile :: FilePath -> IO (Maybe FilePath)
     checkFile f = do
       e <- doesFileExist f
       if e
-        then return f
-        else error $ f ++ " not found"
+        then return $ Just f
+        else return Nothing
 
 data Flags =
    Flags {
@@ -137,36 +142,68 @@ options =
       "verbosity level: 0..3"
   ]
 
+type Package = String
+
 data SourcePackage =
    SourcePackage {
       location :: FilePath,
-      package :: String,
-      dependencies :: [String]
+      package :: Package,
+      dependencies :: [Package]
    }
    deriving (Show, Eq)
 
-sortSpecFiles :: Flags -> [FilePath] -> E.ExceptionalT String IO ()
-sortSpecFiles flags specPaths = do
-      let names = map takeBaseName specPaths
-      provs <-
-         T.lift $
-         mapM (readProvides (optVerbosity flags)) specPaths
-      let resolves = zip names provs
-      deps <-
-         T.lift $
-         mapM (getDepsSrcResolved (optVerbosity flags) resolves) specPaths
-      let pkgs = zipWith3 SourcePackage specPaths names deps
-          graph = getBuildGraph pkgs
-      checkForCycles graph
+type Command = String
+
+runCommand :: Flags -> Command -> [Package] -> E.ExceptionalT String IO ()
+runCommand flags "sort" pkgs = sortSpecFiles flags pkgs
+runCommand flags "deps" pkgs = depsSpecFiles False flags pkgs
+runCommand flags "rdeps" pkgs = depsSpecFiles True flags pkgs
+runCommand _ _ _ = E.throwT "impossible happened"
+
+createGraphNodes :: Flags -> [Package] -> [Package] ->
+               E.ExceptionalT String IO (Gr SourcePackage (), [Graph.Node])
+createGraphNodes flags pkgs subset = do
+  unless (all (`elem` pkgs) subset) $
+    E.throwT "Packages must be in the current directory"
+  specPaths <- T.lift $ catMaybes <$> mapM (findSpec (optBranch flags)) (filter (/= fromMaybe "" (optParallel flags)) pkgs)
+  let names = map takeBaseName specPaths
+  provs <-
+     T.lift $
+     mapM (readProvides (optVerbosity flags)) specPaths
+  let resolves = zip names provs
+  deps <-
+     T.lift $
+     mapM (getDepsSrcResolved (optVerbosity flags) resolves) specPaths
+  let spkgs = zipWith3 SourcePackage specPaths names deps
+      graph = getBuildGraph spkgs
+  checkForCycles graph
+  let nodes = Graph.labNodes graph
+      subnodes = mapMaybe (pkgNode nodes) subset
+  return (graph, subnodes)
+  where
+    pkgNode [] _ = Nothing
+    pkgNode ((i,l):ns) p = if p == package l then Just i else pkgNode ns p
+
+sortSpecFiles :: Flags -> [Package] -> E.ExceptionalT String IO ()
+sortSpecFiles flags pkgs = do
+      (graph, _) <- createGraphNodes flags pkgs []
       T.lift $
          case optParallel flags of
            Just s ->
-             mapM_ ((putStrLn . unwords . (if null s then id else intersperse s) . map (optFormat flags)) .
-                         topsort' . subgraph graph)
+             mapM_ ((putStrLn . unwords . (if null s then id else intersperse s) . map (optFormat flags)) . topsort' . subgraph graph)
                  (components graph)
            Nothing ->
              mapM_ (putStrLn . optFormat flags) $ topsort' graph
  
+depsSpecFiles :: Bool -> Flags -> [Package] -> E.ExceptionalT String IO ()
+depsSpecFiles rev flags pkgs = do
+  allpkgs <- T.lift $ listDirectory "."
+  (graph, nodes) <- createGraphNodes flags allpkgs pkgs
+  let dir = if rev then Graph.suc' else Graph.pre'
+  T.lift $ mapM_ (putStrLn . optFormat flags) $ xdfsWith dir third nodes graph
+  where
+    third (_, _, c, _) = c
+
 readProvides :: Verbosity.Verbosity -> FilePath -> IO [String]
 readProvides verbose file = do
   when (verbose >= Verbosity.verbose) $ hPutStrLn stderr file
@@ -175,22 +212,19 @@ readProvides verbose file = do
   let pkg = takeBaseName file
   return $ delete pkg pkgs
 
-readDependencies :: Verbosity.Verbosity -> FilePath -> IO [String]
-readDependencies verbose file = do
-  when (verbose >= Verbosity.verbose) $ hPutStrLn stderr file
-  lines <$>
-    rpmspec ["--buildrequires", "--define", "ghc_version any"] Nothing file
-
 getDepsSrcResolved :: Verbosity.Verbosity -> [(String,[String])] -> FilePath -> IO [String]
 getDepsSrcResolved verbose provides file =
-  map (resolveBase provides) <$> readDependencies verbose file
-
-resolveBase :: [(String,[String])] -> String -> String
-resolveBase provs br =
-  case mapMaybe (\ (pkg,subs) -> if br `elem` subs then Just pkg else Nothing) provs of
-    [] -> br
-    [p] -> p
-    _ -> error $ "More than one package provides " ++ br
+  map (resolveBase provides) <$> do
+      when (verbose >= Verbosity.verbose) $ hPutStrLn stderr file
+      lines <$>
+        rpmspec ["--buildrequires", "--define", "ghc_version any"] Nothing file
+  where
+    resolveBase :: [(String,[String])] -> String -> String
+    resolveBase provs br =
+      case mapMaybe (\ (pkg,subs) -> if br `elem` subs then Just pkg else Nothing) provs of
+        [] -> br
+        [p] -> p
+        ps -> error $ br ++ "is provided by: " ++ unwords ps
 
 removeSuffix :: String -> String -> String
 removeSuffix suffix orig =
@@ -198,16 +232,15 @@ removeSuffix suffix orig =
   where
     stripSuffix sf str = reverse <$> stripPrefix (reverse sf) (reverse str)
 
-
 cmdStdIn :: String -> [String] -> String -> IO String
 cmdStdIn c as inp = removeTrailingNewline <$> readProcess c as inp
-
-removeTrailingNewline :: String -> String
-removeTrailingNewline "" = ""
-removeTrailingNewline str =
-  if last str == '\n'
-  then init str
-  else str
+  where
+    removeTrailingNewline :: String -> String
+    removeTrailingNewline "" = ""
+    removeTrailingNewline str =
+      if last str == '\n'
+      then init str
+      else str
 
 cmd :: String -> [String] -> IO String
 cmd c as = cmdStdIn c as ""
@@ -225,23 +258,16 @@ getDeps gr =
             map (Graph.lab' . Graph.context gr) (Graph.pre gr . Graph.node' $ ctx))
     in  Graph.ufold (\ctx ds -> c2dep ctx : ds) [] gr
 
-getBuildGraph ::
-   [SourcePackage] ->
-   Gr SourcePackage ()
+getBuildGraph :: [SourcePackage] -> Gr SourcePackage ()
 getBuildGraph srcPkgs =
    let nodes = zip [0..] srcPkgs
-       nodeDict =
-          zip
-             (map package srcPkgs)
-             [0..]
+       nodeDict = zip (map package srcPkgs) [0..]
        edges = do
           (srcNode,srcPkg) <- nodes
-          dstNode <-
-             mapMaybe (`lookup` nodeDict) (dependencies srcPkg)
+          dstNode <- mapMaybe (`lookup` nodeDict) (dependencies srcPkg)
           guard (dstNode /= srcNode)
           return (dstNode, srcNode, ())
-   in  Graph.mkGraph nodes edges
-
+   in Graph.mkGraph nodes edges
 
 checkForCycles ::
    Monad m =>
