@@ -11,7 +11,11 @@ import System.Exit (exitSuccess, exitFailure)
 import qualified System.Environment as Env
 import System.FilePath
 
-import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
+import System.Directory (doesDirectoryExist, doesFileExist,
+#if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,5))
+                         listDirectory
+#endif
+  )
 import System.IO (hPutStrLn, stderr)
 import System.Process (readProcess)
 
@@ -30,6 +34,14 @@ import Data.List (delete, intersperse, stripPrefix)
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
 import Control.Applicative ((<$>))
+#endif
+
+#if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,5))
+#else
+listDirectory :: FilePath -> IO [FilePath]
+listDirectory path =
+  filter f <$> getDirectoryContents path
+  where f filename = filename /= "." && filename /= ".."
 #endif
 
 main :: IO ()
