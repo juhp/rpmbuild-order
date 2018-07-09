@@ -57,7 +57,7 @@ main =
                          " [OPTIONS] PKG-SPEC-OR-DIR ...") options) >>
           exitSuccess)
 
-      T.lift (mapM (findSpec (optBranch flags)) (filter (/= fromMaybe "" (optParallel flags)) pkgs))
+      T.lift (mapM (findSpec (optBranch flags) . (removeSuffix "/")) (filter (/= fromMaybe "" (optParallel flags)) pkgs))
         >>= sortSpecFiles flags
 
 handleException :: String -> IO ()
