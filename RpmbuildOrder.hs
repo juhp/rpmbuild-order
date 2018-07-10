@@ -213,7 +213,7 @@ depsSpecFiles rev flags pkgs = do
   allpkgs <- T.lift $ listDirectory "."
   (graph, nodes) <- createGraphNodes flags allpkgs pkgs
   let dir = if rev then Graph.suc' else Graph.pre'
-  T.lift $ mapM_ (putStrLn . optFormat flags) $ xdfsWith dir third nodes graph
+  sortSpecFiles flags $ map package $ xdfsWith dir third nodes graph
   where
     third (_, _, c, _) = c
 
