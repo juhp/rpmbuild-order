@@ -50,7 +50,7 @@ main :: IO ()
 main =
   E.resolveT handleException $ do
   argv <- T.lift Env.getArgs
-  let (opts, args, errors) = getOpt RequireOrder options argv
+  let (opts, args, errors) = getOpt Permute options argv
   if length args < 2
     then T.lift $ help >> exitFailure
     else do
