@@ -68,8 +68,8 @@ main =
                        optParallel = Nothing,
                        optBranch = Nothing})
                opts
-      if (optHelp flags)
-        then (T.lift $ help >> exitSuccess)
+      if optHelp flags
+        then T.lift $ help >> exitSuccess
         else runCommand flags com $ map (removeSuffix "/") pkgs
   where
     help =
