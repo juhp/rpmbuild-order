@@ -68,10 +68,9 @@ main =
                        optParallel = Nothing,
                        optBranch = Nothing})
                opts
-      when (optHelp flags)
-         (T.lift $ help >> exitSuccess)
-
-      runCommand flags com $ map (removeSuffix "/") pkgs
+      if (optHelp flags)
+        then (T.lift $ help >> exitSuccess)
+        else runCommand flags com $ map (removeSuffix "/") pkgs
   where
     help =
       Env.getProgName >>= \programName ->
