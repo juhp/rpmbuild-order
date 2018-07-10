@@ -229,7 +229,8 @@ getDepsSrcResolved :: Verbosity.Verbosity -> [(String,[String])] -> FilePath -> 
 getDepsSrcResolved verbose provides file =
   map (resolveBase provides) <$> do
       when (verbose >= Verbosity.verbose) $ hPutStrLn stderr file
-      lines <$>
+      -- ignore version bounds
+      map (head . words) . lines <$>
         rpmspec ["--buildrequires", "--define", "ghc_version any"] Nothing file
   where
     resolveBase :: [(String,[String])] -> String -> String
