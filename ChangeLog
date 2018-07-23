@@ -1,0 +1,3 @@
+* 0.1
+- initial release with sort, deps and rdeps (reverse dependencies) commands
+

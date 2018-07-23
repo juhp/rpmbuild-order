@@ -4,24 +4,32 @@ License:          BSD3
 License-File:     LICENSE
 Author:           Henning Thielemann <haskell@henning-thielemann.de>
 Maintainer:       Jens Petersen <petersen@redhat.com>
+Copyright:        2010-2018  Henning Thielemann,
+                  2018 Jens Petersen <petersen@redhat.com>
 Category:         Distribution
-Synopsis:         Topologically sort RPM packages
+Synopsis:         Order RPM packages by dependencies
 Description:
-  If you have a bunch of packages you want to build,
-  then you should build them in dependency order.
-  This program reads RPM package spec files
-  and topologically sorts them according to their dependencies.
-  This allows one to build them in correct dependency order at once,
-  say if a low-level package has changed. The code originates from cabal-sort.
+  The rpmbuild-order tool orders RPM packages by dependencies, so that they can
+  be built in the correct order. It does this by reading RPM package spec files
+  and then topologically sorts them according to their dependencies.
+  The code originates from cabal-sort by Henning Thielemann.
+  It can also output the ordered dependencies or reverse depends
+  for one or more packages, provided all the packages are checked out
+  in neighbouring directories. This is also useful to see what packages
+  are affected when a low-level package changes.
 Tested-with:       GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,
                    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2,
-                   GHC == 8.4.2
+                   GHC == 8.4.3
 Cabal-Version:     >=1.6
 Build-Type:        Simple
 
+source-repository head
+  type:     git
+  location: https://github.com/juhp/rpmbuild-order
+
 Executable rpmbuild-order
   Build-Depends:
-    base,
+    base < 5,
     Cabal,
     containers,
     directory,
