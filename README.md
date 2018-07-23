@@ -5,7 +5,7 @@
 This package based on code from [cabal-sort](http://hackage.haskell.org/package/cabal-sort), sorts rpm package spec files by build order.
 
     $ rpmbuild-order --help
-    $ rpmbuild-order mycore mylib myapp
+    $ rpmbuild-order sort mycore mylib myapp
     mylib
     mycore
     myapp
@@ -14,6 +14,10 @@ The arguments passed can either be directories named after the package, or spec 
 
 By default it outputs the package names, but it can also output
 the spec filenames or directory paths for easier scripting.
+
+Using the rpmbuild-order `deps` and `rdeps` commands the ordered
+dependencies and reverse dependencies of a package can be obtained
+from the current set of checked out package sources.
 
 ## Known problems
 Given packages A, B, C, where C depends on B, and B depends on A,

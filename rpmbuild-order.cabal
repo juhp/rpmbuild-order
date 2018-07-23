@@ -7,6 +7,8 @@ Maintainer:       Jens Petersen <petersen@redhat.com>
 Copyright:        2010-2018  Henning Thielemann,
                   2018 Jens Petersen <petersen@redhat.com>
 Category:         Distribution
+Homepage:         https://github.com/juhp/rpmbuild-order
+Bug-reports:      https://github.com/juhp/rpmbuild-order/issues
 Synopsis:         Order RPM packages by dependencies
 Description:
   The rpmbuild-order tool orders RPM packages by dependencies, so that they can
@@ -22,6 +24,7 @@ Tested-with:       GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,
                    GHC == 8.4.3
 Cabal-Version:     >=1.6
 Build-Type:        Simple
+Extra-source-files: README.md TODO ChangeLog
 
 source-repository head
   type:     git
