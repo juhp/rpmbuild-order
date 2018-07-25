@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/juhp/rpmbuild-order.png)](https://travis-ci.org/juhp/rpmbuild-order)
+[![Hackage](http://img.shields.io/hackage/v/rpmbuild-order.png)](http://hackage.haskell.org/package/rpmbuild-order)
 
 # rpmbuild-order
 
