@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/juhp/rpmbuild-order.png)](https://travis-ci.org/juhp/rpmbuild-order)
 [![Hackage](http://img.shields.io/hackage/v/rpmbuild-order.png)](http://hackage.haskell.org/package/rpmbuild-order)
-![license](https://img.shields.io/badge/license-BSD-brightgreen.svg)]
+[![license](https://img.shields.io/badge/license-BSD-brightgreen.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 # rpmbuild-order
 
