@@ -2,9 +2,6 @@
 
 module Main where
 
-import qualified Distribution.Verbosity as Verbosity
-import qualified Distribution.ReadE as ReadE
-
 import System.Console.GetOpt
           (getOpt, ArgOrder(..), OptDescr(..), ArgDescr(..), usageInfo)
 import System.Exit (exitSuccess, exitFailure)
@@ -63,7 +60,7 @@ main =
             foldr (=<<)
                (return
                 Flags {optHelp = False,
-                       optVerbosity = Verbosity.silent,
+                       optVerbosity = False,
                        optFormat = package,
                        optParallel = Nothing,
                        optBranch = Nothing})
@@ -106,7 +103,7 @@ findSpec mdir file =
 data Flags =
    Flags {
       optHelp :: Bool,
-      optVerbosity :: Verbosity.Verbosity,
+      optVerbosity :: Bool,
       optFormat :: SourcePackage -> String,
       optParallel :: Maybe String,
       optBranch :: Maybe FilePath
@@ -146,13 +143,10 @@ options =
          "KIND")
       "output format: 'package' (default), 'spec', or 'dir'"
   , Option ['v'] ["verbose"]
-      (ReqArg
-         (\str flags ->
-            fmap (\n -> flags{optVerbosity = n}) $
-            E.fromEither $
-            ReadE.runReadE Verbosity.flagToVerbosity str)
-         "N")
-      "verbosity level: 0..3"
+      (NoArg
+         (\flags ->
+            return flags{optVerbosity = True}))
+      "verbose output"
   ]
 
 type Package = String
@@ -217,18 +211,18 @@ depsSpecFiles rev flags pkgs = do
   where
     third (_, _, c, _) = c
 
-readProvides :: Verbosity.Verbosity -> FilePath -> IO [String]
+readProvides :: Bool -> FilePath -> IO [String]
 readProvides verbose file = do
-  when (verbose >= Verbosity.verbose) $ hPutStrLn stderr file
+  when verbose $ hPutStrLn stderr file
   pkgs <- lines <$>
     rpmspec ["--rpms", "--qf=%{name}\n", "--define", "ghc_version any"] Nothing file
   let pkg = takeBaseName file
   return $ delete pkg pkgs
 
-getDepsSrcResolved :: Verbosity.Verbosity -> [(String,[String])] -> FilePath -> IO [String]
+getDepsSrcResolved :: Bool -> [(String,[String])] -> FilePath -> IO [String]
 getDepsSrcResolved verbose provides file =
   map (resolveBase provides) <$> do
-      when (verbose >= Verbosity.verbose) $ hPutStrLn stderr file
+      when verbose $ hPutStrLn stderr file
       -- ignore version bounds
       map (head . words) . lines <$>
         rpmspec ["--buildrequires", "--define", "ghc_version any"] Nothing file
