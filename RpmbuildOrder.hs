@@ -91,7 +91,7 @@ findSpec mdir file =
       let dir = maybe file (file </>) mdir
           pkg = takeBaseName file in
         checkFile $ dir </> pkg ++ ".spec"
-      else return Nothing
+      else error $ "No spec file found for " ++ file
   where
     checkFile :: FilePath -> IO (Maybe FilePath)
     checkFile f = do
