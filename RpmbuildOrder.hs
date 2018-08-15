@@ -204,7 +204,7 @@ sortSpecFiles flags pkgs = do
  
 depsSpecFiles :: Bool -> Flags -> [Package] -> E.ExceptionalT String IO ()
 depsSpecFiles rev flags pkgs = do
-  allpkgs <- T.lift $ listDirectory "."
+  allpkgs <- T.lift $ filter (\ f -> head f /= '.') <$> listDirectory "."
   (graph, nodes) <- createGraphNodes flags allpkgs pkgs
   let dir = if rev then Graph.suc' else Graph.pre'
   sortSpecFiles flags $ map package $ xdfsWith dir third nodes graph
