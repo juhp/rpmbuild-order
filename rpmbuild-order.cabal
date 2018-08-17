@@ -24,7 +24,7 @@ Tested-with:       GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,
                    GHC == 8.4.3
 Cabal-Version:     >=1.6
 Build-Type:        Simple
-Extra-source-files: README.md TODO ChangeLog
+Extra-source-files: README.md TODO ChangeLog rpmbuild-order.1
 
 source-repository head
   type:     git
