@@ -29,6 +29,7 @@ import qualified Data.Set as Set
 import Control.Monad (guard, when, unless)
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import Data.List (delete, intersperse, stripPrefix)
+import Data.Version  (showVersion)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -43,31 +44,38 @@ listDirectory path =
   where f filename = filename /= "." && filename /= ".."
 #endif
 
+import Paths_rpmbuild_order (version)
+
 main :: IO ()
 main =
   E.resolveT handleException $ do
   argv <- T.lift Env.getArgs
   let (opts, args, errors) = getOpt Permute options argv
-  if length args < 2
-    then T.lift $ help >> exitFailure
-    else do
-      let (com:pkgs) = args
-      unless (null errors) $ E.throwT $ concat errors
-      unless (com `elem` ["sort", "deps", "rdeps"]) $
-        E.throwT $ "Unknown command " ++ com
-      flags <-
-         E.ExceptionalT $ return $
-            foldr (=<<)
-               (return
-                Flags {optHelp = False,
-                       optVerbosity = False,
-                       optFormat = package,
-                       optParallel = Nothing,
-                       optBranch = Nothing})
-               opts
-      if optHelp flags
-        then T.lift $ help >> exitSuccess
-        else runCommand flags com $ map (removeSuffix "/") pkgs
+  flags <-
+    E.ExceptionalT $ return $
+        foldr (=<<)
+           (return
+            Flags {optHelp = False,
+                   optVersion = False,
+                   optVerbosity = False,
+                   optFormat = package,
+                   optParallel = Nothing,
+                   optBranch = Nothing})
+           opts
+  if optHelp flags
+    then T.lift $ help >> exitSuccess
+    else
+    if optVersion flags
+    then T.lift $ putStrLn $ showVersion version
+    else
+      if length args < 2
+      then T.lift $ help >> exitFailure
+      else do
+        let (com:pkgs) = args
+        unless (null errors) $ E.throwT $ concat errors
+        unless (com `elem` ["sort", "deps", "rdeps"]) $
+          E.throwT $ "Unknown command " ++ com
+        runCommand flags com $ map (removeSuffix "/") pkgs
   where
     help =
       Env.getProgName >>= \programName ->
@@ -103,6 +111,7 @@ findSpec mdir file =
 data Flags =
    Flags {
       optHelp :: Bool,
+      optVersion :: Bool,
       optVerbosity :: Bool,
       optFormat :: SourcePackage -> String,
       optParallel :: Maybe String,
@@ -115,6 +124,9 @@ options =
     Option ['h'] ["help"]
       (NoArg (\flags -> return $ flags{optHelp = True}))
       "Show options"
+  , Option ['V'] ["version"]
+      (NoArg (\flags -> return $ flags{optVersion = True}))
+      "Show version"
   , Option ['p'] ["parallel"]
       (OptArg
         (\mstr flags ->

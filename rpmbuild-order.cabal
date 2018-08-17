@@ -45,3 +45,4 @@ Executable rpmbuild-order
   GHC-Options:      -Wall
   Main-Is:          RpmbuildOrder.hs
   Extensions:       CPP
+  Other-modules:    Paths_rpmbuild_order
