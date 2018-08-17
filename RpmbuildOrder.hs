@@ -31,6 +31,8 @@ import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import Data.List (delete, intersperse, stripPrefix)
 import Data.Version  (showVersion)
 
+import Paths_rpmbuild_order (version)
+
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
 import Control.Applicative ((<$>))
@@ -43,8 +45,6 @@ listDirectory path =
   filter f <$> getDirectoryContents path
   where f filename = filename /= "." && filename /= ".."
 #endif
-
-import Paths_rpmbuild_order (version)
 
 main :: IO ()
 main =
