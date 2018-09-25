@@ -218,8 +218,8 @@ depsSpecFiles :: Bool -> Flags -> [Package] -> E.ExceptionalT String IO ()
 depsSpecFiles rev flags pkgs = do
   allpkgs <- T.lift $ filter (\ f -> head f /= '.') <$> listDirectory "."
   (graph, nodes) <- createGraphNodes flags allpkgs pkgs
-  let dir = if rev then Graph.suc' else Graph.pre'
-  sortSpecFiles flags $ map package $ xdfsWith dir third nodes graph
+  let direction = if rev then Graph.suc' else Graph.pre'
+  sortSpecFiles flags $ map package $ xdfsWith direction third nodes graph
   where
     third (_, _, c, _) = c
 
