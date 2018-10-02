@@ -16,7 +16,6 @@ import System.Directory (doesDirectoryExist, doesFileExist,
 #endif
   )
 import System.IO (hPutStrLn, stderr)
-import System.Process (readProcess)
 
 import Data.Graph.Inductive.Query.DFS (xdfsWith, topsort', scc, components)
 import Data.Graph.Inductive.Tree (Gr)
@@ -28,9 +27,11 @@ import qualified Control.Monad.Trans.Class as T
 import qualified Data.Set as Set
 import Control.Monad (guard, when, unless)
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
-import Data.List (delete, intersperse, stripPrefix)
+import Data.List (delete, intersperse)
 import Data.Version  (showVersion)
 
+import SimpleCmd (removeSuffix)
+import SimpleCmd.Rpm (rpmspec)
 import Paths_rpmbuild_order (version)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
@@ -226,8 +227,7 @@ depsSpecFiles rev flags pkgs = do
 readProvides :: Bool -> FilePath -> IO [String]
 readProvides verbose file = do
   when verbose $ hPutStrLn stderr file
-  pkgs <- lines <$>
-    rpmspec ["--rpms", "--qf=%{name}\n", "--define", "ghc_version any"] Nothing file
+  pkgs <- rpmspec ["--rpms", "--qf=%{name}", "--define", "ghc_version any"] Nothing file
   let pkg = takeBaseName file
   return $ delete pkg pkgs
 
@@ -236,7 +236,7 @@ getDepsSrcResolved verbose provides file =
   map (resolveBase provides) <$> do
       when verbose $ hPutStrLn stderr file
       -- ignore version bounds
-      map (head . words) . lines <$>
+      map (head . words) <$>
         rpmspec ["--buildrequires", "--define", "ghc_version any"] Nothing file
   where
     resolveBase :: [(String,[String])] -> String -> String
@@ -245,30 +245,6 @@ getDepsSrcResolved verbose provides file =
         [] -> br
         [p] -> p
         ps -> error $ br ++ "is provided by: " ++ unwords ps
-
-removeSuffix :: String -> String -> String
-removeSuffix suffix orig =
-  fromMaybe orig $ stripSuffix suffix orig
-  where
-    stripSuffix sf str = reverse <$> stripPrefix (reverse sf) (reverse str)
-
-cmdStdIn :: String -> [String] -> String -> IO String
-cmdStdIn c as inp = removeTrailingNewline <$> readProcess c as inp
-  where
-    removeTrailingNewline :: String -> String
-    removeTrailingNewline "" = ""
-    removeTrailingNewline str =
-      if last str == '\n'
-      then init str
-      else str
-
-cmd :: String -> [String] -> IO String
-cmd c as = cmdStdIn c as ""
-
-rpmspec :: [String] -> Maybe String -> FilePath -> IO String
-rpmspec args mqf spec = do
-  let qf = maybe [] (\ q -> ["--queryformat", q]) mqf
-  cmd "rpmspec" (["-q"] ++ args ++ qf ++ [spec])
 
 getDeps :: Gr SourcePackage () -> [(SourcePackage, [SourcePackage])]
 getDeps gr =

@@ -40,6 +40,7 @@ Executable rpmbuild-order
     filepath,
     fgl, 
     process,
+    simple-cmd >= 0.1.1,
     transformers
 
   GHC-Options:      -Wall
