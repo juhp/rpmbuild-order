@@ -227,7 +227,7 @@ depsSpecFiles rev flags pkgs = do
 readProvides :: Bool -> FilePath -> IO [String]
 readProvides verbose file = do
   when verbose $ hPutStrLn stderr file
-  pkgs <- rpmspec ["--rpms", "--qf=%{name}", "--define", "ghc_version any"] Nothing file
+  pkgs <- rpmspec ["--rpms", "--define", "ghc_version any"] (Just "%{name}") file
   let pkg = takeBaseName file
   return $ delete pkg pkgs
 
