@@ -21,7 +21,7 @@ git-push:
 	git push --tags
 
 copy:
-	cp -p dist/$(NAME)-$(VERSION).tar.gz ~/fedora/haskell/$(NAME)/master
+	cp -p dist/$(NAME)-$(VERSION).tar.gz ~/fedora/haskell/$(NAME)/
 
 $(NAME).1: RpmbuildOrder.hs rpmbuild-order.cabal
 	LANG=C help2man -N dist/build/$(NAME)/$(NAME) > $@
