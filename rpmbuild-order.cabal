@@ -17,11 +17,11 @@ Description:
   The code originates from cabal-sort by Henning Thielemann.
   It can also output the ordered dependencies or reverse depends
   for one or more packages, provided all the packages are checked out
-  in neighbouring directories. This is also useful to see what packages
+  in neighboring directories. This is also useful to see what packages
   are affected when a low-level package changes.
 Tested-with:       GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,
                    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2,
-                   GHC == 8.4.3
+                   GHC == 8.4.3, GHC == 8.6.3
 Cabal-Version:     >=1.6
 Build-Type:        Simple
 Extra-source-files: README.md TODO ChangeLog rpmbuild-order.1
