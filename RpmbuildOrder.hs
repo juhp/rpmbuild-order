@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Main where
 
 import System.Console.GetOpt
@@ -294,7 +292,8 @@ subgraph graph nodes =
 
 getCycles :: Gr a b -> [[Graph.Node]]
 getCycles =
-   filter (\case
+  -- can use lambdacase for ghc >= 7.6
+   filter (\ x -> case x of
               _:_:_ -> True
               _ -> False)
    . scc
