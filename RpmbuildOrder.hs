@@ -242,7 +242,7 @@ getDepsSrcResolved verbose provides file =
       case mapMaybe (\ (pkg,subs) -> if br `elem` subs then Just pkg else Nothing) provs of
         [] -> br
         [p] -> p
-        ps -> error $ br ++ "is provided by: " ++ unwords ps
+        ps -> error $ br ++ " is provided by: " ++ unwords ps
 
 getDeps :: Gr SourcePackage () -> [(SourcePackage, [SourcePackage])]
 getDeps gr =
