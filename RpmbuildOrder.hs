@@ -292,8 +292,4 @@ subgraph graph nodes =
 
 getCycles :: Gr a b -> [[Graph.Node]]
 getCycles =
-  -- can use lambdacase for ghc >= 7.6
-   filter (\ x -> case x of
-              _:_:_ -> True
-              _ -> False)
-   . scc
+   filter (\ x -> length x == 3) . scc
