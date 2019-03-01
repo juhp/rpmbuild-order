@@ -208,7 +208,7 @@ sortSpecFiles flags pkgs = do
       T.lift $
          case optParallel flags of
            Just s ->
-             mapM_ ((putStrLn . unwords . (if null s then id else intersperse s) . map (optFormat flags)) . topsort' . subgraph graph)
+             mapM_ ((putStrLn . ("\n" ++) . unwords . (if null s then id else intersperse s) . map (optFormat flags)) . topsort' . subgraph graph)
                  (components graph)
            Nothing ->
              mapM_ (putStrLn . optFormat flags) $ topsort' graph
