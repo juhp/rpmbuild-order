@@ -44,6 +44,6 @@ Executable rpmbuild-order
     transformers
 
   GHC-Options:      -Wall
-  Main-Is:          RpmbuildOrder.hs
+  Main-Is:          Main.hs
   Extensions:       CPP
   Other-modules:    Paths_rpmbuild_order
