@@ -21,7 +21,7 @@ Description:
   are affected when a low-level package changes.
 Tested-with:       GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,
                    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2,
-                   GHC == 8.4.3, GHC == 8.6.3
+                   GHC == 8.4.3, GHC == 8.6.5
 Cabal-Version:     >=1.6
 Build-Type:        Simple
 Extra-source-files: README.md TODO ChangeLog rpmbuild-order.1
