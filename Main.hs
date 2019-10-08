@@ -1,5 +1,3 @@
-module Main where
-
 import System.Console.GetOpt
           (getOpt, ArgOrder(..), OptDescr(..), ArgDescr(..), usageInfo)
 import System.Exit (exitSuccess, exitFailure)
@@ -240,14 +238,6 @@ getDepsSrcResolved verbose provides file =
         [] -> br
         [p] -> p
         ps -> error $ br ++ " is provided by: " ++ unwords ps
-
-getDeps :: Gr SourcePackage () -> [(SourcePackage, [SourcePackage])]
-getDeps gr =
-    let c2dep :: Graph.Context SourcePackage () -> (SourcePackage, [SourcePackage])
-        c2dep ctx =
-           (Graph.lab' ctx,
-            map (Graph.lab' . Graph.context gr) (Graph.pre gr . Graph.node' $ ctx))
-    in  Graph.ufold (\ctx ds -> c2dep ctx : ds) [] gr
 
 getBuildGraph :: [SourcePackage] -> Gr SourcePackage ()
 getBuildGraph srcPkgs =
