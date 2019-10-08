@@ -185,10 +185,7 @@ createGraphNodes flags pkgs subset = do
     E.throwT "Packages must be in the current directory"
   specPaths <- T.lift $ catMaybes <$> mapM (findSpec (optBranch flags)) (filter (/= fromMaybe "" (optParallel flags)) pkgs)
   let names = map takeBaseName specPaths
-  provs <-
-     T.lift $
-     mapM (readProvides (optVerbosity flags)) specPaths
-  let resolves = zip names provs
+  resolves <- T.lift $ mapM (readProvides (optVerbosity flags)) specPaths
   deps <-
      T.lift $
      mapM (getDepsSrcResolved (optVerbosity flags) resolves) specPaths
@@ -222,12 +219,12 @@ depsSpecFiles rev flags pkgs = do
   where
     third (_, _, c, _) = c
 
-readProvides :: Bool -> FilePath -> IO [String]
+readProvides :: Bool -> FilePath -> IO (String,[String])
 readProvides verbose file = do
   when verbose $ hPutStrLn stderr file
   pkgs <- map (head . words) <$> rpmspec ["-q", "--provides", "--define", "ghc_version any"] Nothing file
   let pkg = takeBaseName file
-  return $ delete pkg pkgs
+  return $ (pkg, delete pkg pkgs)
 
 getDepsSrcResolved :: Bool -> [(String,[String])] -> FilePath -> IO [String]
 getDepsSrcResolved verbose provides file =
