@@ -1,1 +1,3 @@
-add leaf command
+- --lenient to skip rpmspec failures
+- add leaf command
+- better graph output

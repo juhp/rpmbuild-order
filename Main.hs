@@ -1,7 +1,3 @@
-import System.Console.GetOpt
-          (getOpt, ArgOrder(..), OptDescr(..), ArgDescr(..), usageInfo)
-import System.Exit (exitSuccess, exitFailure)
-import qualified System.Environment as Env
 import System.FilePath
 
 import System.Directory (doesDirectoryExist, doesFileExist,
@@ -11,29 +7,29 @@ import System.Directory (doesDirectoryExist, doesFileExist,
                          getDirectoryContents
 #endif
   )
+-- replace with warning
 import System.IO (hPutStrLn, stderr)
 
 import Data.Graph.Inductive.Query.DFS (xdfsWith, topsort', scc, components)
 import Data.Graph.Inductive.Tree (Gr)
 import qualified Data.Graph.Inductive.Graph as Graph
 
-import qualified Control.Monad.Exception.Synchronous as E
-import qualified Control.Monad.Trans.Class as T
-
 import qualified Data.Set as Set
-import Control.Monad (guard, when, unless)
-import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
-import Data.List (delete, intersperse)
-import Data.Version  (showVersion)
-
-import SimpleCmd (removeSuffix)
-import SimpleCmd.Rpm (rpmspec)
-import Paths_rpmbuild_order (version)
-
+import Control.Applicative (some,
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
-import Control.Applicative ((<$>))
+                            (<$>)
 #endif
+                           )
+import Control.Monad (guard, when, unless)
+import qualified Data.ByteString.Char8 as B
+import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
+import Data.List (delete)
+import Options.Applicative (str)
+
+import SimpleCmd.Rpm (rpmspec)
+import SimpleCmdArgs
+import Paths_rpmbuild_order (version)
 
 #if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,5))
 #else
@@ -45,45 +41,21 @@ listDirectory path =
 
 main :: IO ()
 main =
-  E.resolveT handleException $ do
-  argv <- T.lift Env.getArgs
-  let (opts, args, errors) = getOpt Permute options argv
-  flags <-
-    E.ExceptionalT $ return $
-        foldr (=<<)
-           (return
-            Flags {optHelp = False,
-                   optVersion = False,
-                   optVerbosity = False,
-                   optFormat = package,
-                   optParallel = Nothing,
-                   optBranch = Nothing})
-           opts
-  if optHelp flags
-    then T.lift $ help >> exitSuccess
-    else
-    if optVersion flags
-    then T.lift $ putStrLn $ showVersion version
-    else
-      if length args < 2
-      then T.lift $ help >> exitFailure
-      else do
-        let (com:pkgs) = args
-        unless (null errors) $ E.throwT $ concat errors
-        unless (com `elem` ["sort", "deps", "rdeps"]) $
-          E.throwT $ "Unknown command " ++ com
-        runCommand flags com $ map (removeSuffix "/") pkgs
+  simpleCmdArgs (Just version) "Order packages by build dependencies"
+  "Sort package sources (spec files) in build dependency order" $
+  subcommands
+  [ Subcommand "sort" "sort packages" $
+    sortSpecFiles <$> verboseOpt <*> parallelOpt <*> subdirOpt <*> pkgArgs
+  , Subcommand "deps" "sort dependencies" $
+    depsSpecFiles False <$> verboseOpt <*> parallelOpt <*> subdirOpt <*> pkgArgs
+  , Subcommand "rdeps" "sort dependents" $
+    depsSpecFiles True <$> verboseOpt <*> parallelOpt <*> subdirOpt <*> pkgArgs
+  ]
   where
-    help =
-      Env.getProgName >>= \programName ->
-        putStrLn
-             (usageInfo ("Usage: " ++ programName ++
-                         " [OPTIONS] [sort|deps|rdeps] PKG-SPEC-OR-DIR ...") options)
-
-handleException :: String -> IO ()
-handleException msg = do
-   putStrLn $ "Aborted: " ++ msg
-   exitFailure
+    verboseOpt = switchWith 'v' "verbose" "Verbose output for debugging"
+    parallelOpt = switchWith 'p' "parallel" "Separate independent packages"
+    subdirOpt = optional (strOptionWith 'd' "dir" "SUBDIR" "Branch directory")
+    pkgArgs = some (argumentWith str "PKG...")
 
 findSpec :: Maybe FilePath -> FilePath -> IO (Maybe FilePath)
 findSpec mdir file =
@@ -105,60 +77,7 @@ findSpec mdir file =
         then return $ Just f
         else return Nothing
 
-data Flags =
-   Flags {
-      optHelp :: Bool,
-      optVersion :: Bool,
-      optVerbosity :: Bool,
-      optFormat :: SourcePackage -> String,
-      optParallel :: Maybe String,
-      optBranch :: Maybe FilePath
-   }
-
-options :: [OptDescr (Flags -> E.Exceptional String Flags)]
-options =
-  [
-    Option ['h'] ["help"]
-      (NoArg (\flags -> return $ flags{optHelp = True}))
-      "Show options"
-  , Option ['V'] ["version"]
-      (NoArg (\flags -> return $ flags{optVersion = True}))
-      "Show version"
-  , Option ['p'] ["parallel"]
-      (OptArg
-        (\mstr flags ->
-            fmap (\cs -> flags{optParallel = Just cs})
-            (E.Success (fromMaybe "" mstr)))
-         "SEPARATOR")
-      "Display independently buildable groups of packages, optionally with separator"
-  , Option ['b'] ["branch"]
-      (ReqArg
-         (\str flags ->
-            fmap (\mb -> flags{optBranch = mb})
-            (E.Success (Just str)))
-         "BRANCHDIR")
-    "branch directory"
-  , Option ['f'] ["format"]
-      (ReqArg
-         (\str flags ->
-            fmap (\select -> flags{optFormat = select}) $
-            case str of
-               "package" -> E.Success package
-               "spec" -> E.Success location
-               "dir"  -> E.Success (takeDirectory . location)
-               _ ->
-                  E.Exception $
-                  "unknown info type " ++ str)
-         "KIND")
-      "output format: 'package' (default), 'spec', or 'dir'"
-  , Option ['v'] ["verbose"]
-      (NoArg
-         (\flags ->
-            return flags{optVerbosity = True}))
-      "verbose output"
-  ]
-
-type Package = String
+type Package = B.ByteString
 
 data SourcePackage =
    SourcePackage {
@@ -168,25 +87,15 @@ data SourcePackage =
    }
    deriving (Show, Eq)
 
-type Command = String
-
-runCommand :: Flags -> Command -> [Package] -> E.ExceptionalT String IO ()
-runCommand flags "sort" pkgs = sortSpecFiles flags pkgs
-runCommand flags "deps" pkgs = depsSpecFiles False flags pkgs
-runCommand flags "rdeps" pkgs = depsSpecFiles True flags pkgs
-runCommand _ _ _ = E.throwT "impossible happened"
-
-createGraphNodes :: Flags -> [Package] -> [Package] ->
-               E.ExceptionalT String IO (Gr SourcePackage (), [Graph.Node])
-createGraphNodes flags pkgs subset = do
+createGraphNodes :: Bool -> Maybe FilePath -> [Package] -> [Package] ->
+                    IO (Gr SourcePackage (), [Graph.Node])
+createGraphNodes verbose mdir pkgs subset = do
   unless (all (`elem` pkgs) subset) $
-    E.throwT "Packages must be in the current directory"
-  specPaths <- T.lift $ catMaybes <$> mapM (findSpec (optBranch flags)) (filter (/= fromMaybe "" (optParallel flags)) pkgs)
-  let names = map takeBaseName specPaths
-  resolves <- T.lift $ mapM (readProvides (optVerbosity flags)) specPaths
-  deps <-
-     T.lift $
-     mapM (getDepsSrcResolved (optVerbosity flags) resolves) specPaths
+    error "Packages must be in the current directory"
+  specPaths <- catMaybes <$> mapM (findSpec mdir . B.unpack) pkgs
+  let names = map (B.pack . takeBaseName) specPaths
+  resolves <- mapM (readProvides verbose) specPaths
+  deps <- mapM (getDepsSrcResolved verbose resolves) specPaths
   let spkgs = zipWith3 SourcePackage specPaths names deps
       graph = getBuildGraph spkgs
   checkForCycles graph
@@ -197,47 +106,43 @@ createGraphNodes flags pkgs subset = do
     pkgNode [] _ = Nothing
     pkgNode ((i,l):ns) p = if p == package l then Just i else pkgNode ns p
 
-sortSpecFiles :: Flags -> [Package] -> E.ExceptionalT String IO ()
-sortSpecFiles flags pkgs = do
-      (graph, _) <- createGraphNodes flags pkgs []
-      T.lift $
-         case optParallel flags of
-           Just s ->
-             mapM_ ((putStrLn . ("\n" ++) . unwords . (if null s then id else intersperse s) . map (optFormat flags)) . topsort' . subgraph graph)
-                 (components graph)
-           Nothing ->
-             mapM_ (putStrLn . optFormat flags) $ topsort' graph
+sortSpecFiles :: Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
+sortSpecFiles verbose parallel mdir pkgs = do
+      (graph, _) <- createGraphNodes verbose mdir pkgs []
+      if parallel then
+        mapM_ ((B.putStrLn . B.cons '\n' . B.unwords . map package) . topsort' . subgraph graph) (components graph)
+        else mapM_ (B.putStrLn . package) $ topsort' graph
  
-depsSpecFiles :: Bool -> Flags -> [Package] -> E.ExceptionalT String IO ()
-depsSpecFiles rev flags pkgs = do
-  allpkgs <- T.lift $ filter (\ f -> head f /= '.') <$> listDirectory "."
-  (graph, nodes) <- createGraphNodes flags allpkgs pkgs
+depsSpecFiles :: Bool -> Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
+depsSpecFiles rev verbose parallel mdir pkgs = do
+  allpkgs <- map B.pack . filter (\ f -> head f /= '.') <$> listDirectory "."
+  (graph, nodes) <- createGraphNodes verbose mdir allpkgs pkgs
   let direction = if rev then Graph.suc' else Graph.pre'
-  sortSpecFiles flags $ map package $ xdfsWith direction third nodes graph
+  sortSpecFiles verbose parallel mdir $ map package $ xdfsWith direction third nodes graph
   where
     third (_, _, c, _) = c
 
-readProvides :: Bool -> FilePath -> IO (String,[String])
+readProvides :: Bool -> FilePath -> IO (Package,[Package])
 readProvides verbose file = do
   when verbose $ hPutStrLn stderr file
-  pkgs <- map (head . words) <$> rpmspec ["-q", "--provides", "--define", "ghc_version any"] Nothing file
-  let pkg = takeBaseName file
-  return $ (pkg, delete pkg pkgs)
+  pkgs <- map (B.pack . head . words) <$> rpmspec ["-q", "--provides", "--define", "ghc_version any"] Nothing file
+  let pkg = B.pack $ takeBaseName file
+  return (pkg, delete pkg pkgs)
 
-getDepsSrcResolved :: Bool -> [(String,[String])] -> FilePath -> IO [String]
+getDepsSrcResolved :: Bool -> [(Package,[Package])] -> FilePath -> IO [Package]
 getDepsSrcResolved verbose provides file =
   map (resolveBase provides) <$> do
       when verbose $ hPutStrLn stderr file
       -- ignore version bounds
-      map (head . words) <$>
+      map (B.pack . head . words) <$>
         rpmspec ["--buildrequires", "--define", "ghc_version any"] Nothing file
   where
-    resolveBase :: [(String,[String])] -> String -> String
+    resolveBase :: [(Package,[Package])] -> Package -> Package
     resolveBase provs br =
       case mapMaybe (\ (pkg,subs) -> if br `elem` subs then Just pkg else Nothing) provs of
         [] -> br
         [p] -> p
-        ps -> error $ br ++ " is provided by: " ++ unwords ps
+        ps -> error $ B.unpack br ++ " is provided by: " ++ (B.unpack . B.unwords) ps
 
 getBuildGraph :: [SourcePackage] -> Gr SourcePackage ()
 getBuildGraph srcPkgs =
@@ -250,17 +155,14 @@ getBuildGraph srcPkgs =
           return (dstNode, srcNode, ())
    in Graph.mkGraph nodes edges
 
-checkForCycles ::
-   Monad m =>
-   Gr SourcePackage () ->
-   E.ExceptionalT String m ()
+checkForCycles :: Monad m => Gr SourcePackage () -> m ()
 checkForCycles graph =
    case getCycles graph of
       [] -> return ()
       cycles ->
-         E.throwT $ unlines $
-         "Cycles in dependencies:" :
-         map (unwords . map location . nodeLabels graph) cycles
+        error $ unlines $
+        "Cycles in dependencies:" :
+        map (unwords . map location . nodeLabels graph) cycles
 
 nodeLabels :: Gr a b -> [Graph.Node] -> [a]
 nodeLabels graph =

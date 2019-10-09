@@ -31,17 +31,16 @@ source-repository head
   location: https://github.com/juhp/rpmbuild-order
 
 Executable rpmbuild-order
-  Build-Depends:
-    base < 5,
-    Cabal,
-    containers,
-    directory,
-    explicit-exception,
-    filepath,
-    fgl, 
-    process,
-    simple-cmd >= 0.1.1,
-    transformers
+  Build-Depends: base < 5,
+                 bytestring,
+                 Cabal,
+                 containers,
+                 directory,
+                 filepath,
+                 fgl,
+                 optparse-applicative,
+                 simple-cmd >= 0.1.1,
+                 simple-cmd-args
 
   GHC-Options:      -Wall
   Main-Is:          Main.hs
