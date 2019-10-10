@@ -1,5 +1,5 @@
 Name:             rpmbuild-order
-Version:          0.2.2
+Version:          0.3
 License:          BSD3
 License-File:     LICENSE
 Author:           Henning Thielemann <haskell@henning-thielemann.de>
@@ -39,8 +39,8 @@ Executable rpmbuild-order
                  filepath,
                  fgl,
                  optparse-applicative,
-                 simple-cmd >= 0.1.1,
-                 simple-cmd-args
+                 simple-cmd-args,
+                 typed-process
 
   GHC-Options:      -Wall
   Main-Is:          Main.hs
