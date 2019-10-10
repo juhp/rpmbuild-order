@@ -39,8 +39,8 @@ Executable rpmbuild-order
                  filepath,
                  fgl,
                  optparse-applicative,
-                 simple-cmd-args,
-                 typed-process
+                 process,
+                 simple-cmd-args
 
   GHC-Options:      -Wall
   Main-Is:          Main.hs

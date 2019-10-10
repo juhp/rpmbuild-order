@@ -11,7 +11,6 @@ import Control.Applicative (some,
                            )
 import Control.Monad (guard, when, unless)
 import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import Data.List (delete)
 import Options.Applicative (str)
@@ -26,7 +25,7 @@ import System.Exit (ExitCode (..), exitFailure)
 import System.FilePath
 -- replace with warning
 import System.IO (hPutStrLn, stderr)
-import System.Process.Typed (proc, readProcess)
+import System.Process (readProcessWithExitCode)
 
 import SimpleCmdArgs
 import Paths_rpmbuild_order (version)
@@ -188,13 +187,12 @@ getCycles =
 -- returns the first word for each line
 rpmspecQuery :: Bool -> [String] -> FilePath -> IO (Maybe [B.ByteString])
 rpmspecQuery lenient args spec = do
-  let cmd = proc "rpmspec" (["-q"] ++ args ++ [spec])
-  (res, out, err) <- readProcess cmd
-  unless (BL.null err) $ BL.hPutStrLn stderr err
+  (res, out, err) <- readProcessWithExitCode "rpmspec" (["-q"] ++ args ++ [spec]) ""
+  unless (null err) $ hPutStrLn stderr err
   case res of
     ExitFailure _ -> if lenient then return Nothing else exitFailure
-    ExitSuccess -> return $ Just $ map (BL.toStrict . takeFirst) $ BL.lines out
+    ExitSuccess -> return $ Just $ map takeFirst $ B.lines (B.pack out)
   where
     -- ignore version bounds
-    takeFirst :: BL.ByteString -> BL.ByteString
-    takeFirst = head . BL.words
+    takeFirst :: B.ByteString -> B.ByteString
+    takeFirst = head . B.words
