@@ -1,7 +1,8 @@
-# 0.3 (2019-10-09)
+# 0.3 (2019-10-10)
 - check package provides instead of rpms
 - use ByteString for packages (provides)
 - move to simple-cmd-args (optparse-applicative)
+- add --lenient for rpmspec failures
 
 # 0.2 (2018-08-17)
 - error if no spec file
