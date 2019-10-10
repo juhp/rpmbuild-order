@@ -6,7 +6,7 @@ import qualified Data.Set as Set
 import Control.Applicative (some,
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
-                            (<$>)
+                            (<$>), (<*>)
 #endif
                            )
 import Control.Monad (guard, when, unless)
