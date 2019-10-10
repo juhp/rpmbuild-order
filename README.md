@@ -22,13 +22,19 @@ dependencies and reverse dependencies of a package can be obtained
 from the current set of checked out package sources.
 
 ## Known problems
-Given packages A, B, C, where C depends on B, and B depends on A,
+1. Given packages A, B, C, where C depends on B, and B depends on A,
 and you call
 
-    rpmbuild-order C.spec A.spec
+    rpmbuild-order sort C.spec A.spec
 
 then the output may be wrong if C does not have a direct dependency on A.
 Even if the order is correct, B is missing in the output
 and thus in this case the list of packages cannot be reliably used
 for a sequence of builds.
 
+However `rpmbuild-order deps` and `rpmbuild-order rdeps` take
+other neighbouring package directories into account.
+
+2. repoquery is not used to resolve Requires or filelists for Provides.
+So if a package BuildRequires: /usr/bin/sometool it will not be resolved.
+This may get addressed in a future version.
