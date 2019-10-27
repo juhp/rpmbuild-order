@@ -32,9 +32,9 @@ Even if the order is correct, B is missing in the output
 and thus in this case the list of packages cannot be reliably used
 for a sequence of builds.
 
-However `rpmbuild-order deps` and `rpmbuild-order rdeps` take
+However the `deps` and `rdeps` commands take
 other neighbouring package directories into account.
 
 2. repoquery is not used to resolve Requires or filelists for Provides.
-So if a package BuildRequires: /usr/bin/sometool it will not be resolved.
+So if a package BuildRequires a file, it will not be resolved to a package.
 This may get addressed in a future version.
