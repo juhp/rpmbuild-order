@@ -1,6 +1,10 @@
 {-# LANGUAGE CPP #-}
 
-import Control.Applicative (some,
+import Control.Applicative (
+#if (defined(MIN_VERSION_simple_cmd_args) && MIN_VERSION_simple_cmd_args(0,1,4))
+#else
+                            some,
+#endif
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
                             (<$>), (<*>)
@@ -10,7 +14,10 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.Graph.Inductive.Graph as Graph
 import Data.Graph.Inductive.Query.DFS (xdfsWith, topsort', components)
 
+#if (defined(MIN_VERSION_simple_cmd_args) && MIN_VERSION_simple_cmd_args(0,1,4))
+#else
 import Options.Applicative (str)
+#endif
 import SimpleCmdArgs
 import System.Directory (
 #if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,5))
