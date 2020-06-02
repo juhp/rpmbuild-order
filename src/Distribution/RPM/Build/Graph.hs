@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 
-module Distribution.RPM.Build.Order
+module Distribution.RPM.Build.Graph
   (Package,
    SourcePackage(package),
    createGraphNodes,

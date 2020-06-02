@@ -27,7 +27,7 @@ import System.Directory (
 #endif
   )
 
-import Distribution.RPM.Build.Order
+import Distribution.RPM.Build.Graph
 import Paths_rpmbuild_order (version)
 
 main :: IO ()

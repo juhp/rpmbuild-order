@@ -56,7 +56,7 @@ Executable rpmbuild-order
   default-language: Haskell2010
 
 Library
-  Exposed-Modules:  Distribution.RPM.Build.Order
+  Exposed-Modules:  Distribution.RPM.Build.Graph
   Build-Depends: base < 5,
                  bytestring,
                  Cabal,
