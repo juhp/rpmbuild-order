@@ -35,27 +35,6 @@ listDirectory path =
   where f filename = filename /= "." && filename /= ".."
 #endif
 
--- | findSpec
-findSpec :: Maybe FilePath -> FilePath -> IO (Maybe FilePath)
-findSpec mdir file =
-  if takeExtension file == ".spec"
-    then checkFile file
-    else do
-    dirp <- doesDirectoryExist file
-    if dirp
-      then
-      let dir = maybe file (file </>) mdir
-          pkg = takeBaseName file in
-        checkFile $ dir </> pkg ++ ".spec"
-      else error $ "No spec file found for " ++ file
-  where
-    checkFile :: FilePath -> IO (Maybe FilePath)
-    checkFile f = do
-      e <- doesFileExist f
-      if e
-        then return $ Just f
-        else return Nothing
-
 type Package = B.ByteString
 
 data SourcePackage =
@@ -71,7 +50,7 @@ createGraphNodes :: Bool -> Bool -> Maybe FilePath -> [Package] -> [Package] ->
 createGraphNodes verbose lenient mdir pkgs subset = do
   unless (all (`elem` pkgs) subset) $
     error "Packages must be in the current directory"
-  specPaths <- catMaybes <$> mapM (findSpec mdir . B.unpack) pkgs
+  specPaths <- catMaybes <$> mapM (findSpec . B.unpack) pkgs
   let names = map (B.pack . takeBaseName) specPaths
   resolves <- catMaybes <$> mapM (readProvides verbose lenient) specPaths
   deps <- catMaybes <$> mapM (getDepsSrcResolved verbose lenient resolves) specPaths
@@ -82,6 +61,26 @@ createGraphNodes verbose lenient mdir pkgs subset = do
       subnodes = mapMaybe (pkgNode nodes) subset
   return (graph, subnodes)
   where
+    findSpec :: FilePath -> IO (Maybe FilePath)
+    findSpec file =
+      if takeExtension file == ".spec"
+        then checkFile file
+        else do
+        dirp <- doesDirectoryExist file
+        if dirp
+          then
+          let dir = maybe file (file </>) mdir
+              pkg = takeBaseName file in
+            checkFile $ dir </> pkg ++ ".spec"
+          else error $ "No spec file found for " ++ file
+      where
+        checkFile :: FilePath -> IO (Maybe FilePath)
+        checkFile f = do
+          e <- doesFileExist f
+          if e
+            then return $ Just f
+            else return Nothing
+
     pkgNode [] _ = Nothing
     pkgNode ((i,l):ns) p = if p == package l then Just i else pkgNode ns p
 
