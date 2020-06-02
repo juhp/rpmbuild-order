@@ -52,7 +52,7 @@ createGraphNodes verbose lenient mdir pkgs subset = do
     error "Packages must be in the current directory"
   specPaths <- catMaybes <$> mapM (findSpec . B.unpack) pkgs
   let names = map (B.pack . takeBaseName) specPaths
-  resolves <- catMaybes <$> mapM (readProvides verbose lenient) specPaths
+  resolves <- catMaybes <$> mapM readProvides specPaths
   deps <- catMaybes <$> mapM (getDepsSrcResolved verbose lenient resolves) specPaths
   let spkgs = zipWith3 SourcePackage specPaths names deps
       graph = getBuildGraph spkgs
@@ -84,15 +84,39 @@ createGraphNodes verbose lenient mdir pkgs subset = do
     pkgNode [] _ = Nothing
     pkgNode ((i,l):ns) p = if p == package l then Just i else pkgNode ns p
 
-readProvides :: Bool -> Bool -> FilePath -> IO (Maybe (Package,[Package]))
-readProvides verbose lenient file = do
-  when verbose $ hPutStrLn stderr file
-  mpkgs <- rpmspecQuery lenient ["-q", "--provides", "--define", "ghc_version any"] file
-  case mpkgs of
-    Nothing -> return Nothing
-    Just pkgs ->
-      let pkg = B.pack $ takeBaseName file in
-        return $ Just (pkg, delete pkg pkgs)
+    readProvides :: FilePath -> IO (Maybe (Package,[Package]))
+    readProvides file = do
+      when verbose $ hPutStrLn stderr file
+      mpkgs <- rpmspecQuery lenient ["-q", "--provides", "--define", "ghc_version any"] file
+      case mpkgs of
+        Nothing -> return Nothing
+        Just provs ->
+          let pkg = B.pack $ takeBaseName file in
+            return $ Just (pkg, delete pkg provs)
+
+    getBuildGraph :: [SourcePackage] -> Gr SourcePackage ()
+    getBuildGraph srcPkgs =
+       let nodes = zip [0..] srcPkgs
+           nodeDict = zip (map package srcPkgs) [0..]
+           edges = do
+              (srcNode,srcPkg) <- nodes
+              dstNode <- mapMaybe (`lookup` nodeDict) (dependencies srcPkg)
+              guard (dstNode /= srcNode)
+              return (dstNode, srcNode, ())
+       in Graph.mkGraph nodes edges
+
+    checkForCycles :: Monad m => Gr SourcePackage () -> m ()
+    checkForCycles graph =
+       case getCycles graph of
+          [] -> return ()
+          cycles ->
+            error $ unlines $
+            "Cycles in dependencies:" :
+            map (unwords . map location . nodeLabels graph) cycles
+      where
+        getCycles :: Gr a b -> [[Graph.Node]]
+        getCycles =
+           filter (\ x -> length x == 3) . scc
 
 getDepsSrcResolved :: Bool -> Bool -> [(Package,[Package])] -> FilePath -> IO (Maybe [Package])
 getDepsSrcResolved verbose lenient provides file = do
@@ -106,26 +130,6 @@ getDepsSrcResolved verbose lenient provides file = do
         [] -> br
         [p] -> p
         ps -> error $ B.unpack br ++ " is provided by: " ++ (B.unpack . B.unwords) ps
-
-getBuildGraph :: [SourcePackage] -> Gr SourcePackage ()
-getBuildGraph srcPkgs =
-   let nodes = zip [0..] srcPkgs
-       nodeDict = zip (map package srcPkgs) [0..]
-       edges = do
-          (srcNode,srcPkg) <- nodes
-          dstNode <- mapMaybe (`lookup` nodeDict) (dependencies srcPkg)
-          guard (dstNode /= srcNode)
-          return (dstNode, srcNode, ())
-   in Graph.mkGraph nodes edges
-
-checkForCycles :: Monad m => Gr SourcePackage () -> m ()
-checkForCycles graph =
-   case getCycles graph of
-      [] -> return ()
-      cycles ->
-        error $ unlines $
-        "Cycles in dependencies:" :
-        map (unwords . map location . nodeLabels graph) cycles
 
 nodeLabels :: Gr a b -> [Graph.Node] -> [a]
 nodeLabels graph =
@@ -141,10 +145,6 @@ subgraph graph nodes =
            guard $ Set.member from nodeSet && Set.member to nodeSet
            return (from,to,lab)
    in  Graph.mkGraph (zip nodes $ nodeLabels graph nodes) edges
-
-getCycles :: Gr a b -> [[Graph.Node]]
-getCycles =
-   filter (\ x -> length x == 3) . scc
 
 -- returns the first word for each line
 rpmspecQuery :: Bool -> [String] -> FilePath -> IO (Maybe [B.ByteString])
