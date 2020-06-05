@@ -1,5 +1,5 @@
 Name:             rpmbuild-order
-Version:          0.3.1
+Version:          0.4.0
 License:          BSD3
 License-File:     LICENSE
 Author:           Henning Thielemann <haskell@henning-thielemann.de>

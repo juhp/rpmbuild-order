@@ -46,7 +46,7 @@ data SourcePackage =
    deriving (Show, Eq)
 
 createGraphNodes :: Bool -> Bool -> Maybe FilePath -> [Package] -> [Package] ->
-                    IO (Gr SourcePackage (), [Graph.Node])
+                    IO (Gr Package (), [Graph.Node])
 createGraphNodes verbose lenient mdir pkgs subset = do
   unless (all (`elem` pkgs) subset) $
     error "Packages must be in the current directory"
@@ -82,7 +82,7 @@ createGraphNodes verbose lenient mdir pkgs subset = do
             else return Nothing
 
     pkgNode [] _ = Nothing
-    pkgNode ((i,l):ns) p = if p == package l then Just i else pkgNode ns p
+    pkgNode ((i,l):ns) p = if p == l then Just i else pkgNode ns p
 
     readProvides :: FilePath -> IO (Maybe (Package,[Package]))
     readProvides file = do
@@ -94,7 +94,7 @@ createGraphNodes verbose lenient mdir pkgs subset = do
           let pkg = B.pack $ takeBaseName file in
             return $ Just (pkg, delete pkg provs)
 
-    getBuildGraph :: [SourcePackage] -> Gr SourcePackage ()
+    getBuildGraph :: [SourcePackage] -> Gr Package ()
     getBuildGraph srcPkgs =
        let nodes = zip [0..] srcPkgs
            nodeDict = zip (map package srcPkgs) [0..]
@@ -103,16 +103,16 @@ createGraphNodes verbose lenient mdir pkgs subset = do
               dstNode <- mapMaybe (`lookup` nodeDict) (dependencies srcPkg)
               guard (dstNode /= srcNode)
               return (dstNode, srcNode, ())
-       in Graph.mkGraph nodes edges
+       in Graph.mkGraph (map (fmap package) nodes) edges
 
-    checkForCycles :: Monad m => Gr SourcePackage () -> m ()
+    checkForCycles :: Monad m => Gr Package () -> m ()
     checkForCycles graph =
        case getCycles graph of
           [] -> return ()
           cycles ->
             error $ unlines $
             "Cycles in dependencies:" :
-            map (unwords . map location . nodeLabels graph) cycles
+            map (B.unpack . B.unwords . nodeLabels graph) cycles
       where
         getCycles :: Gr a b -> [[Graph.Node]]
         getCycles =

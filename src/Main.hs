@@ -53,15 +53,15 @@ sortSpecFiles :: Bool -> Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
 sortSpecFiles verbose lenient parallel mdir pkgs = do
   (graph, _) <- createGraphNodes verbose lenient mdir pkgs []
   if parallel then
-    mapM_ ((B.putStrLn . B.cons '\n' . B.unwords . map package) . topsort' . subgraph graph) (components graph)
-    else mapM_ (B.putStrLn . package) $ topsort' graph
+    mapM_ ((B.putStrLn . B.cons '\n' . B.unwords) . topsort' . subgraph graph) (components graph)
+    else mapM_ B.putStrLn $ topsort' graph
 
 depsSpecFiles :: Bool -> Bool -> Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
 depsSpecFiles rev verbose lenient parallel mdir pkgs = do
   allpkgs <- map B.pack . filter (\ f -> head f /= '.') <$> listDirectory "."
   (graph, nodes) <- createGraphNodes verbose lenient mdir allpkgs pkgs
   let direction = if rev then Graph.suc' else Graph.pre'
-  sortSpecFiles verbose lenient parallel mdir $ map package $ xdfsWith direction third nodes graph
+  sortSpecFiles verbose lenient parallel mdir $ xdfsWith direction third nodes graph
   where
     third (_, _, c, _) = c
 
