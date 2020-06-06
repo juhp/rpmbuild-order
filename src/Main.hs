@@ -51,7 +51,7 @@ main =
 
 sortSpecFiles :: Bool -> Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
 sortSpecFiles verbose lenient parallel mdir pkgs = do
-  (graph, _) <- createGraphNodes verbose lenient mdir pkgs []
+  graph <- createGraph verbose lenient mdir pkgs
   if parallel then
     mapM_ ((B.putStrLn . B.cons '\n' . B.unwords) . topsort' . subgraph graph) (components graph)
     else mapM_ B.putStrLn $ topsort' graph

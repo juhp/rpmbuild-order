@@ -3,6 +3,7 @@
 module Distribution.RPM.Build.Graph
   (Package,
    SourcePackage(package),
+   createGraph,
    createGraphNodes,
    subgraph
   ) where
@@ -45,11 +46,23 @@ data SourcePackage =
    }
    deriving (Show, Eq)
 
+-- | create a directed packages dependency graph together with subset of nodes
 createGraphNodes :: Bool -> Bool -> Maybe FilePath -> [Package] -> [Package] ->
                     IO (Gr Package (), [Graph.Node])
 createGraphNodes verbose lenient mdir pkgs subset = do
   unless (all (`elem` pkgs) subset) $
     error "Packages must be in the current directory"
+  graph <- createGraph verbose lenient mdir pkgs
+  let nodes = Graph.labNodes graph
+      subnodes = mapMaybe (pkgNode nodes) subset
+  return (graph, subnodes)
+  where
+    pkgNode [] _ = Nothing
+    pkgNode ((i,l):ns) p = if p == l then Just i else pkgNode ns p
+
+-- | create a directed packages dependency graph
+createGraph :: Bool -> Bool -> Maybe FilePath -> [Package] -> IO (Gr Package ())
+createGraph verbose lenient mdir pkgs = do
   specPaths <- catMaybes <$> mapM (findSpec . B.unpack) pkgs
   let names = map (B.pack . takeBaseName) specPaths
   resolves <- catMaybes <$> mapM readProvides specPaths
@@ -57,9 +70,7 @@ createGraphNodes verbose lenient mdir pkgs subset = do
   let spkgs = zipWith3 SourcePackage specPaths names deps
       graph = getBuildGraph spkgs
   checkForCycles graph
-  let nodes = Graph.labNodes graph
-      subnodes = mapMaybe (pkgNode nodes) subset
-  return (graph, subnodes)
+  return graph
   where
     findSpec :: FilePath -> IO (Maybe FilePath)
     findSpec file =
@@ -80,9 +91,6 @@ createGraphNodes verbose lenient mdir pkgs subset = do
           if e
             then return $ Just f
             else return Nothing
-
-    pkgNode [] _ = Nothing
-    pkgNode ((i,l):ns) p = if p == l then Just i else pkgNode ns p
 
     readProvides :: FilePath -> IO (Maybe (Package,[Package]))
     readProvides file = do

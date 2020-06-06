@@ -11,11 +11,10 @@ import Distribution.RPM.Build.Graph
 -- | sort packages by dependencies
 dependencySort :: [String] -> IO [String]
 dependencySort pkgs = do
-  (graph, _) <- createGraphNodes False False Nothing (map B.pack pkgs) []
-  return $ map B.unpack $ topsort' graph
+  map B.unpack . topsort' <$> createGraph False False Nothing (map B.pack pkgs)
 
 -- | dependency sort of packages in graph components
 dependencySortParallel :: [String] -> IO [[String]]
 dependencySortParallel pkgs = do
-  (graph, _) <- createGraphNodes False False Nothing (map B.pack pkgs) []
+  graph <- createGraph False False Nothing (map B.pack pkgs)
   return $ map (map B.unpack . topsort' . subgraph graph) (components graph)
