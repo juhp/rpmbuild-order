@@ -21,15 +21,18 @@ import Control.Monad (guard, when, unless)
 import qualified Data.ByteString.Char8 as B
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import Data.List (delete)
-import System.Directory (doesDirectoryExist, doesFileExist)
+import System.Directory (doesDirectoryExist, doesFileExist,
+#if !MIN_VERSION_directory(1,2,5)
+                         getDirectoryContents
+#endif
+                        )
 import System.Exit (ExitCode (..), exitFailure)
 import System.FilePath
 -- replace with warning
 import System.IO (hPutStrLn, stderr)
 import System.Process (readProcessWithExitCode)
 
-#if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,5))
-#else
+#if !MIN_VERSION_directory(1,2,5)
 listDirectory :: FilePath -> IO [FilePath]
 listDirectory path =
   filter f <$> getDirectoryContents path
