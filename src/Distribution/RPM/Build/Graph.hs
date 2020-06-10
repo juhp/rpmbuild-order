@@ -13,8 +13,7 @@ import Data.Graph.Inductive.Tree (Gr)
 import qualified Data.Graph.Inductive.Graph as Graph
 
 import qualified Data.Set as Set
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
-#else
+#if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad (guard, when, unless)

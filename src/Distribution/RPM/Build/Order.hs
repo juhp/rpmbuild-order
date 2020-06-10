@@ -1,8 +1,13 @@
+{-# LANGUAGE CPP #-}
+
 module Distribution.RPM.Build.Order
   (dependencySort,
    dependencySortParallel)
 where
 
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative ((<$>))
+#endif
 import qualified Data.ByteString.Char8 as B
 import Data.Graph.Inductive.Query.DFS (topsort', components)
 
