@@ -182,7 +182,7 @@ subgraph graph nodes =
 
 getCycles :: Gr a b -> [[Graph.Node]]
 getCycles =
-   filter (\ x -> length x == 3) . scc
+   filter ((>= 2) . length) . scc
 
 -- returns the first word for each line
 rpmspecQuery :: Bool -> [String] -> FilePath -> IO (Maybe [B.ByteString])
