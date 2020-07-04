@@ -126,7 +126,7 @@ createGraph verbose lenient mdir pkgs = do
       where
         getCycles :: Gr a b -> [[Graph.Node]]
         getCycles =
-           filter (\ x -> length x == 3) . scc
+           filter ((>= 2) . length) . scc
 
 getDepsSrcResolved :: Bool -> Bool -> [(Package,[Package])] -> FilePath -> IO (Maybe [Package])
 getDepsSrcResolved verbose lenient provides file = do
