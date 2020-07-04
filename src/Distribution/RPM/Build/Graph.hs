@@ -42,7 +42,6 @@ type Package = B.ByteString
 
 data SourcePackage =
    SourcePackage {
-      location :: FilePath,
       package :: Package,
       dependencies :: [Package]
    }
@@ -69,7 +68,7 @@ createGraph verbose lenient mdir pkgs = do
   let names = map (B.pack . takeBaseName) specPaths
   resolves <- catMaybes <$> mapM readProvides specPaths
   deps <- catMaybes <$> mapM (getDepsSrcResolved verbose lenient resolves) specPaths
-  let spkgs = zipWith3 SourcePackage specPaths names deps
+  let spkgs = zipWith SourcePackage names deps
       graph = getBuildGraph spkgs
   checkForCycles graph
   return graph
