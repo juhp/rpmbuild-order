@@ -1,3 +1,6 @@
+# 0.3.1 (2020-07-04)
+- fix detection of circular dependencies (bug introduced in 0.3)
+
 # 0.3 (2019-10-10)
 - check package provides instead of rpms
 - use ByteString for packages (provides)
@@ -12,4 +15,3 @@
 
 # 0.1 (2018-07-18)
 - initial release with sort, deps and rdeps (reverse dependencies) commands
-
