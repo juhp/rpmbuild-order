@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 import Data.Graph.Inductive.Query.DFS (xdfsWith, topsort', scc, components)
 import Data.Graph.Inductive.Tree (Gr)
 import qualified Data.Graph.Inductive.Graph as Graph
