@@ -7,7 +7,8 @@ module Distribution.RPM.Build.Graph
    createGraphNodes,
    subgraph,
    packageLayers,
-   packageLeaves
+   packageLeaves,
+   separatePackages
   ) where
 
 import Data.Graph.Inductive.Query.DFS ({-xdfsWith, topsort',-} scc, {-components-})
@@ -184,3 +185,7 @@ lowestLayer graph =
 packageLeaves :: Gr Package () -> [Package]
 packageLeaves graph =
   map snd $ Graph.labNodes $ Graph.nfilter ((==0) . (Graph.outdeg graph)) graph
+
+separatePackages :: Gr Package () -> [Package]
+separatePackages graph =
+  map snd $ Graph.labNodes $ Graph.nfilter ((==0) . (Graph.deg graph)) graph

@@ -46,6 +46,8 @@ main =
     chainOrderFiles <$> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "leaves" "List of the top leaves of package graph" $
     leavesFiles <$> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
+  , Subcommand "separate" "List independent packages from graph" $
+    separateFiles <$> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
   ]
   where
     verboseOpt = switchWith 'v' "verbose" "Verbose output for debugging"
@@ -90,3 +92,9 @@ leavesFiles verbose lenient mdir pkgs = do
   graph <- createGraph verbose lenient mdir pkgs
   let leaves = packageLeaves graph
   mapM_ B.putStrLn leaves
+
+separateFiles :: Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
+separateFiles verbose lenient mdir pkgs = do
+  graph <- createGraph verbose lenient mdir pkgs
+  let independent = separatePackages graph
+  mapM_ B.putStrLn independent
