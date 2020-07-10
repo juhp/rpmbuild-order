@@ -1,6 +1,5 @@
 - try topograph
 
-- add leaf command
 - better graph output
 - tests
   - testcase for circular deps: eg

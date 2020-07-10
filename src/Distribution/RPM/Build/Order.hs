@@ -3,7 +3,8 @@
 module Distribution.RPM.Build.Order
   (dependencySort,
    dependencySortParallel,
-   dependencyLayers)
+   dependencyLayers,
+   leafPackages)
 where
 
 #if !MIN_VERSION_base(4,8,0)
@@ -30,3 +31,8 @@ dependencyLayers :: [String] -> IO [[String]]
 dependencyLayers pkgs = do
   graph <- createGraph False False Nothing (map B.pack pkgs)
   return $ fmap (map B.unpack) $ packageLayers graph
+
+leafPackages :: [String] -> IO [String]
+leafPackages pkgs = do
+  graph <- createGraph False False Nothing (map B.pack pkgs)
+  return $ map B.unpack $ packageLeaves graph

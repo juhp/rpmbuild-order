@@ -44,6 +44,8 @@ main =
     depsSpecFiles True <$> verboseOpt <*> lenientOpt <*> parallelOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "chain" "ordered output suitable for a chain-build" $
     chainOrderFiles <$> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
+  , Subcommand "leaves" "List of the top leaves of package graph" $
+    leavesFiles <$> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
   ]
   where
     verboseOpt = switchWith 'v' "verbose" "Verbose output for debugging"
@@ -82,3 +84,9 @@ chainOrderFiles verbose lenient mdir pkgs = do
   graph <- createGraph verbose lenient mdir pkgs
   let chain = intercalate [B.pack ":"] $ packageLayers graph
   B.putStrLn $ B.intercalate (B.pack " ") chain
+
+leavesFiles :: Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
+leavesFiles verbose lenient mdir pkgs = do
+  graph <- createGraph verbose lenient mdir pkgs
+  let leaves = packageLeaves graph
+  mapM_ B.putStrLn leaves
