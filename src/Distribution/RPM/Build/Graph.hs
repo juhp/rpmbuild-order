@@ -5,7 +5,8 @@ module Distribution.RPM.Build.Graph
    SourcePackage(package),
    createGraph,
    createGraphNodes,
-   subgraph
+   subgraph,
+   packageLayers
   ) where
 
 import Data.Graph.Inductive.Query.DFS ({-xdfsWith, topsort',-} scc, {-components-})
@@ -167,3 +168,14 @@ rpmspecQuery lenient args spec = do
     -- ignore version bounds
     takeFirst :: B.ByteString -> B.ByteString
     takeFirst = head . B.words
+
+packageLayers :: Gr Package () -> [[Package]]
+packageLayers graph =
+  if Graph.isEmpty graph then []
+  else
+    let layer = lowestLayer graph
+    in [map snd layer] ++ packageLayers (Graph.delNodes (map fst layer) graph)
+
+lowestLayer :: Gr Package () -> [Graph.LNode Package]
+lowestLayer graph =
+  Graph.labNodes $ Graph.nfilter ((==0) . (Graph.indeg graph)) graph

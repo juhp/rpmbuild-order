@@ -13,6 +13,7 @@ import Control.Applicative (
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Graph.Inductive.Graph as Graph
 import Data.Graph.Inductive.Query.DFS (xdfsWith, topsort', components)
+import Data.List
 
 #if (defined(MIN_VERSION_simple_cmd_args) && MIN_VERSION_simple_cmd_args(0,1,4))
 #else
@@ -41,6 +42,8 @@ main =
     depsSpecFiles False <$> verboseOpt <*> lenientOpt <*> parallelOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "rdeps" "sort dependents" $
     depsSpecFiles True <$> verboseOpt <*> lenientOpt <*> parallelOpt <*> subdirOpt <*> pkgArgs
+  , Subcommand "chain" "ordered output suitable for a chain-build" $
+    chainOrderFiles <$> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
   ]
   where
     verboseOpt = switchWith 'v' "verbose" "Verbose output for debugging"
@@ -72,3 +75,10 @@ listDirectory path =
   filter f <$> getDirectoryContents path
   where f filename = filename /= "." && filename /= ".."
 #endif
+
+-- FIXME option to separate graph components
+chainOrderFiles :: Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
+chainOrderFiles verbose lenient mdir pkgs = do
+  graph <- createGraph verbose lenient mdir pkgs
+  let chain = intercalate [B.pack ":"] $ packageLayers graph
+  B.putStrLn $ B.intercalate (B.pack " ") chain

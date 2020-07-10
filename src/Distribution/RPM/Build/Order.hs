@@ -2,7 +2,8 @@
 
 module Distribution.RPM.Build.Order
   (dependencySort,
-   dependencySortParallel)
+   dependencySortParallel,
+   dependencyLayers)
 where
 
 #if !MIN_VERSION_base(4,8,0)
@@ -23,3 +24,9 @@ dependencySortParallel :: [String] -> IO [[String]]
 dependencySortParallel pkgs = do
   graph <- createGraph False False Nothing (map B.pack pkgs)
   return $ map (map B.unpack . topsort' . subgraph graph) (components graph)
+
+-- | group packages in dependency layers, lowest first
+dependencyLayers :: [String] -> IO [[String]]
+dependencyLayers pkgs = do
+  graph <- createGraph False False Nothing (map B.pack pkgs)
+  return $ fmap (map B.unpack) $ packageLayers graph
