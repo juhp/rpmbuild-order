@@ -60,8 +60,8 @@ Library
   Exposed-Modules:  Distribution.RPM.Build.Graph
                     Distribution.RPM.Build.Order
   Build-Depends: base < 5,
-                 bytestring,
                  Cabal,
+                 case-insensitive,
                  containers,
                  directory,
                  filepath,

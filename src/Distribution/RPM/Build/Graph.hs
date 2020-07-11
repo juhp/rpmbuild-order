@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Distribution.RPM.Build.Graph
   (Package,
@@ -12,6 +13,7 @@ module Distribution.RPM.Build.Graph
    separatePackages
   ) where
 
+import qualified Data.CaseInsensitive as CI
 import Data.Graph.Inductive.Query.DFS ({-xdfsWith, topsort',-} scc, {-components-})
 import Data.Graph.Inductive.Tree (Gr)
 import qualified Data.Graph.Inductive.Graph as Graph
@@ -21,9 +23,8 @@ import qualified Data.Set as Set
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad (guard, when, unless)
-import qualified Data.ByteString.Char8 as B
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
-import Data.List (delete)
+import Data.List
 import System.Directory (doesDirectoryExist, doesFileExist,
 #if !MIN_VERSION_directory(1,2,5)
                          getDirectoryContents
@@ -42,7 +43,7 @@ listDirectory path =
   where f filename = filename /= "." && filename /= ".."
 #endif
 
-type Package = B.ByteString
+type Package = String
 
 data SourcePackage =
    SourcePackage {
@@ -68,11 +69,11 @@ createGraphNodes verbose lenient mdir pkgs subset = do
 -- | create a directed packages dependency graph
 createGraph :: Bool -> Bool -> Maybe FilePath -> [Package] -> IO (Gr Package ())
 createGraph verbose lenient mdir pkgs = do
-  specPaths <- catMaybes <$> mapM (findSpec . B.unpack) pkgs
-  let names = map (B.pack . takeBaseName) specPaths
-  resolves <- catMaybes <$> mapM readProvides specPaths
-  deps <- catMaybes <$> mapM (getDepsSrcResolved verbose lenient resolves) specPaths
-  let spkgs = zipWith SourcePackage names deps
+  specPaths <- catMaybes <$> mapM findSpec pkgs
+  let names = map takeBaseName specPaths
+  metadata <- catMaybes <$> mapM readSpecMetadata specPaths
+  let deps = mapMaybe (getDepsSrcResolved metadata) names
+      spkgs = zipWith SourcePackage names deps
       graph = getBuildGraph spkgs
   checkForCycles graph
   return graph
@@ -97,15 +98,33 @@ createGraph verbose lenient mdir pkgs = do
             then return $ Just f
             else return Nothing
 
-    readProvides :: FilePath -> IO (Maybe (Package,[Package]))
-    readProvides file = do
+    readSpecMetadata :: FilePath -> IO (Maybe (Package,[Package],[Package]))
+    readSpecMetadata file = do
       when verbose $ hPutStrLn stderr file
-      mpkgs <- rpmspecQuery lenient ["-q", "--provides", "--define", "ghc_version any"] file
-      case mpkgs of
+      mcontent <- rpmspecParse lenient file
+      case mcontent of
         Nothing -> return Nothing
-        Just provs ->
-          let pkg = B.pack $ takeBaseName file in
-            return $ Just (pkg, delete pkg provs)
+        Just content ->
+          let pkg = takeBaseName file
+              (provs,brs) = extractMetadata pkg ([],[]) $ lines content
+          in return $ Just (pkg, provs, brs)
+      where
+        extractMetadata :: Package -> ([Package],[Package]) -> [String] -> ([Package],[Package])
+        extractMetadata _ acc [] = acc
+        extractMetadata pkg acc@(provs,brs) (l:ls) =
+          let ws = words l in
+            if length ws < 2 then extractMetadata pkg acc ls
+            else case CI.mk (head ws) of
+              "BuildRequires:" -> extractMetadata pkg (provs,(head . tail) ws : brs) ls
+              "Provides:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
+              "%package" ->
+                let subpkg =
+                      let sub = last ws in
+                        if length ws == 2
+                        then pkg ++ '-' : sub
+                        else sub
+                in extractMetadata pkg (subpkg : provs, brs) ls
+              _ -> extractMetadata pkg acc ls
 
     getBuildGraph :: [SourcePackage] -> Gr Package ()
     getBuildGraph srcPkgs =
@@ -125,24 +144,25 @@ createGraph verbose lenient mdir pkgs = do
           cycles ->
             error $ unlines $
             "Cycles in dependencies:" :
-            map (B.unpack . B.unwords . nodeLabels graph) cycles
+            map (unwords . nodeLabels graph) cycles
       where
         getCycles :: Gr a b -> [[Graph.Node]]
         getCycles =
            filter ((>= 2) . length) . scc
 
-getDepsSrcResolved :: Bool -> Bool -> [(Package,[Package])] -> FilePath -> IO (Maybe [Package])
-getDepsSrcResolved verbose lenient provides file = do
-  when verbose $ hPutStrLn stderr file
-  fmap (map resolveBase) <$>
-    rpmspecQuery lenient ["--buildrequires", "--define", "ghc_version any"] file
+getDepsSrcResolved :: [(Package,[Package],[Package])] -> Package -> Maybe [Package]
+getDepsSrcResolved metadata pkg =
+  map resolveBase . thd <$> find ((== pkg) . fst3) metadata
   where
     resolveBase :: Package -> Package
     resolveBase br =
-      case mapMaybe (\ (pkg,subs) -> if br `elem` subs then Just pkg else Nothing) provides of
+      case mapMaybe (\ (p,provs,_) -> if br `elem` provs then Just p else Nothing) metadata of
         [] -> br
         [p] -> p
-        ps -> error $ B.unpack br ++ " is provided by: " ++ (B.unpack . B.unwords) ps
+        ps -> error $ pkg ++ ": " ++ br ++ " is provided by: " ++ unwords ps
+
+    fst3 (a,_,_) = a
+    thd (_,_,c) = c
 
 nodeLabels :: Gr a b -> [Graph.Node] -> [a]
 nodeLabels graph =
@@ -160,33 +180,29 @@ subgraph graph nodes =
    in  Graph.mkGraph (zip nodes $ nodeLabels graph nodes) edges
 
 -- returns the first word for each line
-rpmspecQuery :: Bool -> [String] -> FilePath -> IO (Maybe [B.ByteString])
-rpmspecQuery lenient args spec = do
-  (res, out, err) <- readProcessWithExitCode "rpmspec" (["-q"] ++ args ++ [spec]) ""
+rpmspecParse :: Bool -> FilePath -> IO (Maybe String)
+rpmspecParse lenient spec = do
+  (res, out, err) <- readProcessWithExitCode "rpmspec" ["-P", "--define", "ghc_version any", spec] ""
   unless (null err) $ hPutStrLn stderr err
   case res of
     ExitFailure _ -> if lenient then return Nothing else exitFailure
-    ExitSuccess -> return $ Just $ map takeFirst $ B.lines (B.pack out)
-  where
-    -- ignore version bounds
-    takeFirst :: B.ByteString -> B.ByteString
-    takeFirst = head . B.words
+    ExitSuccess -> return $ Just out
 
 packageLayers :: Gr Package () -> [[Package]]
 packageLayers graph =
   if Graph.isEmpty graph then []
   else
     let layer = lowestLayer graph
-    in [map snd layer] ++ packageLayers (Graph.delNodes (map fst layer) graph)
+    in map snd layer : packageLayers (Graph.delNodes (map fst layer) graph)
 
 lowestLayer :: Gr Package () -> [Graph.LNode Package]
 lowestLayer graph =
-  Graph.labNodes $ Graph.nfilter ((==0) . (Graph.indeg graph)) graph
+  Graph.labNodes $ Graph.nfilter ((==0) . Graph.indeg graph) graph
 
 packageLeaves :: Gr Package () -> [Package]
 packageLeaves graph =
-  map snd $ Graph.labNodes $ Graph.nfilter ((==0) . (Graph.outdeg graph)) graph
+  map snd $ Graph.labNodes $ Graph.nfilter ((==0) . Graph.outdeg graph) graph
 
 separatePackages :: Gr Package () -> [Package]
 separatePackages graph =
-  map snd $ Graph.labNodes $ Graph.nfilter ((==0) . (Graph.deg graph)) graph
+  map snd $ Graph.labNodes $ Graph.nfilter ((==0) . Graph.deg graph) graph

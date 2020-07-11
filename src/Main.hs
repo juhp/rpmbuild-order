@@ -10,7 +10,6 @@ import Control.Applicative (
                             (<$>), (<*>)
 #endif
                            )
-import qualified Data.ByteString.Char8 as B
 import qualified Data.Graph.Inductive.Graph as Graph
 import qualified Data.Graph.Inductive.Query.DFS as DFS
 import Data.List
@@ -67,17 +66,17 @@ sortSpecFiles verbose lenient components mdir pkgs = do
   graph <- createGraph verbose lenient mdir pkgs
   case components of
     Parallel ->
-      mapM_ ((B.putStrLn . B.cons '\n' . B.unwords) . DFS.topsort' . subgraph graph) (DFS.components graph)
-    Combine -> (B.putStrLn . B.unwords . DFS.topsort') graph
+      mapM_ ((putStrLn . ('\n':) . unwords) . DFS.topsort' . subgraph graph) (DFS.components graph)
+    Combine -> (putStrLn . unwords . DFS.topsort') graph
     Connected ->
-      mapM_ ((B.putStrLn . B.cons '\n' . B.unwords) . DFS.topsort' . subgraph graph) $ filter ((>1) . length) (DFS.components graph)
+      mapM_ ((putStrLn . ('\n':) . unwords) . DFS.topsort' . subgraph graph) $ filter ((>1) . length) (DFS.components graph)
     Separate ->
       let independent = separatePackages graph
-      in mapM_ B.putStrLn independent
+      in mapM_ putStrLn independent
 
 depsSpecFiles :: Bool -> Bool -> Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
 depsSpecFiles rev verbose lenient parallel mdir pkgs = do
-  allpkgs <- map B.pack . filter (\ f -> head f /= '.') <$> listDirectory "."
+  allpkgs <- filter ((/= '.') . head) <$> listDirectory "."
   (graph, nodes) <- createGraphNodes verbose lenient mdir allpkgs pkgs
   let direction = if rev then Graph.suc' else Graph.pre'
   sortSpecFiles verbose lenient (if parallel then Parallel else Combine) mdir $ DFS.xdfsWith direction third nodes graph
@@ -96,20 +95,20 @@ chainOrderFiles :: Bool -> Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
 chainOrderFiles verbose lenient combine mdir pkgs = do
   graph <- createGraph verbose lenient mdir pkgs
   if combine then doChain graph
-    else mapM_ doChain $ map (subgraph graph) (DFS.components graph)
+    else mapM_ (doChain . subgraph graph) (DFS.components graph)
   where
     doChain graph =
-      let chain = intercalate [B.pack ":"] $ packageLayers graph
-      in B.putStrLn $ B.intercalate (B.pack " ") chain
+      let chain = intercalate [":"] $ packageLayers graph
+      in putStrLn $ unwords chain
 
 leavesFiles :: Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
 leavesFiles verbose lenient mdir pkgs = do
   graph <- createGraph verbose lenient mdir pkgs
   let leaves = packageLeaves graph
-  mapM_ B.putStrLn leaves
+  mapM_ putStrLn leaves
 
 rootFiles :: Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
 rootFiles verbose lenient mdir pkgs = do
   graph <- createGraph verbose lenient mdir pkgs
   let roots = map snd $ lowestLayer graph
-  mapM_ B.putStrLn roots
+  mapM_ putStrLn roots
