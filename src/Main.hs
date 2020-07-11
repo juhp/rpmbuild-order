@@ -1,12 +1,13 @@
 {-# LANGUAGE CPP #-}
 
 import Control.Applicative (
-#if (defined(MIN_VERSION_simple_cmd_args) && MIN_VERSION_simple_cmd_args(0,1,4))
-#else
+#if !MIN_VERSION_simple_cmd_args(0,1,3)
+                            (<|>),
+#endif
+#if !MIN_VERSION_simple_cmd_args(0,1,4)
                             some,
 #endif
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
-#else
+#if !MIN_VERSION_base(4,8,0)
                             (<$>), (<*>)
 #endif
                            )
@@ -14,13 +15,12 @@ import qualified Data.Graph.Inductive.Graph as Graph
 import qualified Data.Graph.Inductive.Query.DFS as DFS
 import Data.List
 
-#if (defined(MIN_VERSION_simple_cmd_args) && MIN_VERSION_simple_cmd_args(0,1,4))
-#else
+#if !MIN_VERSION_simple_cmd_args(0,1,4)
 import Options.Applicative (str)
 #endif
 import SimpleCmdArgs
 import System.Directory (
-#if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,5))
+#if MIN_VERSION_directory(1,2,5)
                          listDirectory
 #else
                          getDirectoryContents
