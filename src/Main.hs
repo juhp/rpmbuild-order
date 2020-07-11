@@ -46,6 +46,8 @@ main =
     chainOrderFiles <$> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "leaves" "List of the top leaves of package graph" $
     leavesFiles <$> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
+  , Subcommand "roots" "List lowest root packages" $
+    rootFiles <$> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
   ]
   where
     verboseOpt = switchWith 'v' "verbose" "Verbose output for debugging"
@@ -105,3 +107,9 @@ leavesFiles verbose lenient mdir pkgs = do
   graph <- createGraph verbose lenient mdir pkgs
   let leaves = packageLeaves graph
   mapM_ B.putStrLn leaves
+
+rootFiles :: Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
+rootFiles verbose lenient mdir pkgs = do
+  graph <- createGraph verbose lenient mdir pkgs
+  let roots = map snd $ lowestLayer graph
+  mapM_ B.putStrLn roots

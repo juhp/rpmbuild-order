@@ -7,6 +7,7 @@ module Distribution.RPM.Build.Graph
    createGraphNodes,
    subgraph,
    packageLayers,
+   lowestLayer,
    packageLeaves,
    separatePackages
   ) where
