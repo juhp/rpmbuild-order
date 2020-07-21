@@ -1,8 +1,12 @@
 - try topograph
 
 - better graph output
-- tests
+- Tests!!
   - testcase for circular deps: eg
     hspec -> hspec-core -> tf-random -> primitive -> base-orphans(tests) -> hspec
 
-- use Set more
+- use Set?
+
+- warn about uninstalled macros packages
+
+- handle duplicate packages?
