@@ -2,9 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Distribution.RPM.Build.Graph
-  (Package,
-   SourcePackage(package),
-   createGraph,
+  (createGraph,
    createGraphNodes,
    subgraph,
    packageLayers,
@@ -43,18 +41,16 @@ listDirectory path =
   where f filename = filename /= "." && filename /= ".."
 #endif
 
-type Package = String
-
 data SourcePackage =
-   SourcePackage {
-      package :: Package,
-      dependencies :: [Package]
+  SourcePackage {
+    packagePath :: FilePath,
+    dependencies :: [FilePath]
    }
-   deriving (Show, Eq)
+   deriving Eq
 
 -- | create a directed packages dependency graph together with subset of nodes
-createGraphNodes :: Bool -> Bool -> Maybe FilePath -> [Package] -> [Package] ->
-                    IO (Gr Package (), [Graph.Node])
+createGraphNodes :: Bool -> Bool -> Maybe FilePath -> [FilePath] -> [FilePath] ->
+                    IO (Gr FilePath (), [Graph.Node])
 createGraphNodes verbose lenient mdir pkgs subset = do
   unless (all (`elem` pkgs) subset) $
     error "Packages must be in the current directory"
@@ -67,17 +63,17 @@ createGraphNodes verbose lenient mdir pkgs subset = do
     pkgNode ((i,l):ns) p = if p == l then Just i else pkgNode ns p
 
 -- | create a directed packages dependency graph
-createGraph :: Bool -> Bool -> Maybe FilePath -> [Package] -> IO (Gr Package ())
-createGraph verbose lenient mdir pkgs = do
-  specPaths <- catMaybes <$> mapM findSpec pkgs
-  let names = map takeBaseName specPaths
-  metadata <- catMaybes <$> mapM readSpecMetadata specPaths
-  let deps = mapMaybe (getDepsSrcResolved metadata) names
-      spkgs = zipWith SourcePackage names deps
+createGraph :: Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO (Gr FilePath ())
+createGraph verbose lenient mdir pkgdirs = do
+  metadata <- catMaybes <$> mapM readSpecMetadata pkgdirs
+  let deps = mapMaybe (getDepsSrcResolved metadata) pkgdirs
+      spkgs = zipWith SourcePackage pkgdirs deps
       graph = getBuildGraph spkgs
   checkForCycles graph
   return graph
   where
+    -- FIXME seems too lenient for non-existent spec file
+    -- FIXME ignore dead.package instead?
     findSpec :: FilePath -> IO (Maybe FilePath)
     findSpec file =
       if takeExtension file == ".spec"
@@ -98,18 +94,22 @@ createGraph verbose lenient mdir pkgs = do
             then return $ Just f
             else return Nothing
 
-    readSpecMetadata :: FilePath -> IO (Maybe (Package,[Package],[Package]))
-    readSpecMetadata file = do
-      when verbose $ hPutStrLn stderr file
-      mcontent <- rpmspecParse lenient file
-      case mcontent of
+    readSpecMetadata :: FilePath -> IO (Maybe (FilePath,[String],[String]))
+    readSpecMetadata dir = do
+      mspec <- findSpec dir
+      case mspec of
         Nothing -> return Nothing
-        Just content ->
-          let pkg = takeBaseName file
-              (provs,brs) = extractMetadata pkg ([],[]) $ lines content
-          in return $ Just (pkg, provs, brs)
+        Just spec -> do
+          when verbose $ hPutStrLn stderr spec
+          mcontent <- rpmspecParse lenient spec
+          case mcontent of
+            Nothing -> return Nothing
+            Just content ->
+              let pkg = takeBaseName spec
+                  (provs,brs) = extractMetadata pkg ([],[]) $ lines content
+              in return $ Just (dir, provs, brs)
       where
-        extractMetadata :: Package -> ([Package],[Package]) -> [String] -> ([Package],[Package])
+        extractMetadata :: FilePath -> ([String],[String]) -> [String] -> ([String],[String])
         extractMetadata _ acc [] = acc
         extractMetadata pkg acc@(provs,brs) (l:ls) =
           let ws = words l in
@@ -126,18 +126,18 @@ createGraph verbose lenient mdir pkgs = do
                 in extractMetadata pkg (subpkg : provs, brs) ls
               _ -> extractMetadata pkg acc ls
 
-    getBuildGraph :: [SourcePackage] -> Gr Package ()
+    getBuildGraph :: [SourcePackage] -> Gr FilePath ()
     getBuildGraph srcPkgs =
        let nodes = zip [0..] srcPkgs
-           nodeDict = zip (map package srcPkgs) [0..]
+           nodeDict = zip (map packagePath srcPkgs) [0..]
            edges = do
               (srcNode,srcPkg) <- nodes
               dstNode <- mapMaybe (`lookup` nodeDict) (dependencies srcPkg)
               guard (dstNode /= srcNode)
               return (dstNode, srcNode, ())
-       in Graph.mkGraph (map (fmap package) nodes) edges
+       in Graph.mkGraph (map (fmap packagePath) nodes) edges
 
-    checkForCycles :: Monad m => Gr Package () -> m ()
+    checkForCycles :: Monad m => Gr FilePath () -> m ()
     checkForCycles graph =
        case getCycles graph of
           [] -> return ()
@@ -150,11 +150,11 @@ createGraph verbose lenient mdir pkgs = do
         getCycles =
            filter ((>= 2) . length) . scc
 
-getDepsSrcResolved :: [(Package,[Package],[Package])] -> Package -> Maybe [Package]
+getDepsSrcResolved :: [(FilePath,[String],[String])] -> FilePath -> Maybe [FilePath]
 getDepsSrcResolved metadata pkg =
   map resolveBase . thd <$> find ((== pkg) . fst3) metadata
   where
-    resolveBase :: Package -> Package
+    resolveBase :: FilePath -> FilePath
     resolveBase br =
       case mapMaybe (\ (p,provs,_) -> if br `elem` provs then Just p else Nothing) metadata of
         [] -> br
@@ -188,21 +188,21 @@ rpmspecParse lenient spec = do
     ExitFailure _ -> if lenient then return Nothing else exitFailure
     ExitSuccess -> return $ Just out
 
-packageLayers :: Gr Package () -> [[Package]]
+packageLayers :: Gr FilePath () -> [[FilePath]]
 packageLayers graph =
   if Graph.isEmpty graph then []
   else
     let layer = lowestLayer graph
     in map snd layer : packageLayers (Graph.delNodes (map fst layer) graph)
 
-lowestLayer :: Gr Package () -> [Graph.LNode Package]
+lowestLayer :: Gr FilePath () -> [Graph.LNode FilePath]
 lowestLayer graph =
   Graph.labNodes $ Graph.nfilter ((==0) . Graph.indeg graph) graph
 
-packageLeaves :: Gr Package () -> [Package]
+packageLeaves :: Gr FilePath () -> [FilePath]
 packageLeaves graph =
   map snd $ Graph.labNodes $ Graph.nfilter ((==0) . Graph.outdeg graph) graph
 
-separatePackages :: Gr Package () -> [Package]
+separatePackages :: Gr FilePath () -> [FilePath]
 separatePackages graph =
   map snd $ Graph.labNodes $ Graph.nfilter ((==0) . Graph.deg graph) graph

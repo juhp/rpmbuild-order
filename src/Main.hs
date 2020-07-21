@@ -61,7 +61,7 @@ main =
 
 data Components = Parallel | Combine | Connected | Separate
 
-sortSpecFiles :: Bool -> Bool -> Components -> Maybe FilePath -> [Package] -> IO ()
+sortSpecFiles :: Bool -> Bool -> Components -> Maybe FilePath -> [FilePath] -> IO ()
 sortSpecFiles verbose lenient components mdir pkgs = do
   graph <- createGraph verbose lenient mdir pkgs
   case components of
@@ -74,7 +74,7 @@ sortSpecFiles verbose lenient components mdir pkgs = do
       let independent = separatePackages graph
       in mapM_ putStrLn independent
 
-depsSpecFiles :: Bool -> Bool -> Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
+depsSpecFiles :: Bool -> Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 depsSpecFiles rev verbose lenient parallel mdir pkgs = do
   allpkgs <- filter ((/= '.') . head) <$> listDirectory "."
   (graph, nodes) <- createGraphNodes verbose lenient mdir allpkgs pkgs
@@ -91,7 +91,7 @@ listDirectory path =
   where f filename = filename /= "." && filename /= ".."
 #endif
 
-chainOrderFiles :: Bool -> Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
+chainOrderFiles :: Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 chainOrderFiles verbose lenient combine mdir pkgs = do
   graph <- createGraph verbose lenient mdir pkgs
   if combine then doChain graph
@@ -101,13 +101,13 @@ chainOrderFiles verbose lenient combine mdir pkgs = do
       let chain = intercalate [":"] $ packageLayers graph
       in putStrLn $ unwords chain
 
-leavesFiles :: Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
+leavesFiles :: Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 leavesFiles verbose lenient mdir pkgs = do
   graph <- createGraph verbose lenient mdir pkgs
   let leaves = packageLeaves graph
   mapM_ putStrLn leaves
 
-rootFiles :: Bool -> Bool -> Maybe FilePath -> [Package] -> IO ()
+rootFiles :: Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 rootFiles verbose lenient mdir pkgs = do
   graph <- createGraph verbose lenient mdir pkgs
   let roots = map snd $ lowestLayer graph
