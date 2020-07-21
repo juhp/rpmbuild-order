@@ -12,7 +12,7 @@ module Distribution.RPM.Build.Graph
   ) where
 
 import qualified Data.CaseInsensitive as CI
-import Data.Graph.Inductive.Query.DFS ({-xdfsWith, topsort',-} scc, {-components-})
+import Data.Graph.Inductive.Query.DFS (scc)
 import Data.Graph.Inductive.Tree (Gr)
 import qualified Data.Graph.Inductive.Graph as Graph
 
