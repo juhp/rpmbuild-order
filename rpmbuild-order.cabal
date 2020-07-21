@@ -35,6 +35,7 @@ Executable rpmbuild-order
   Build-Depends: base < 5,
                  bytestring,
                  directory,
+                 extra,
                  fgl,
                  optparse-applicative,
                  rpmbuild-order,

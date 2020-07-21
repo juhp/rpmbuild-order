@@ -13,7 +13,7 @@ import Control.Applicative (
                            )
 import qualified Data.Graph.Inductive.Graph as Graph
 import qualified Data.Graph.Inductive.Query.DFS as DFS
-import Data.List
+import Data.List.Extra
 
 #if !MIN_VERSION_simple_cmd_args(0,1,4)
 import Options.Applicative (str)
@@ -53,7 +53,7 @@ main =
     lenientOpt = switchWith 'l' "lenient" "Ignore rpmspec errors"
     combineOpt = switchWith 'c' "combine" "Combine independent packages"
     subdirOpt = optional (strOptionWith 'd' "dir" "SUBDIR" "Branch directory")
-    pkgArgs = some (argumentWith str "PKG...")
+    pkgArgs = map (dropSuffix "/") <$> some (argumentWith str "PKG...")
     componentsOpt =
       flagWith' Connected 'C' "connected" "Only include connected packages" <|>
       flagWith' Separate 's' "separated" "Only list independent packages" <|>
