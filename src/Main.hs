@@ -57,7 +57,7 @@ main =
     componentsOpt =
       flagWith' Connected 'C' "connected" "Only include connected packages" <|>
       flagWith' Separate 's' "separated" "Only list independent packages" <|>
-      flagWith Parallel Combine 'c' "combine" "Separate independent packages"
+      flagWith Parallel Combine 'c' "combine" "Combine connected and independent packages"
 
 data Components = Parallel | Combine | Connected | Separate
 
