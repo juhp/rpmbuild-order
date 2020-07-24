@@ -48,9 +48,13 @@ data SourcePackage =
    }
    deriving Eq
 
--- | create a directed packages dependency graph together with subset of nodes
-createGraphNodes :: Bool -> Bool -> Maybe FilePath -> [FilePath] -> [FilePath] ->
-                    IO (Gr FilePath (), [Graph.Node])
+-- | Create a directed package dependency graph with respect to a subset of packages
+createGraphNodes :: Bool -- ^ verbose
+                 -> Bool -- ^ lenient (skip rpmspec failures)
+                 -> Maybe FilePath -- ^ look for spec file in a subdirectory
+                 -> [FilePath] -- ^ package paths (directories or spec filepaths)
+                 -> [FilePath] -- ^ subset of packages to start from
+                 -> IO (Gr FilePath (), [Graph.Node]) -- ^ dependency graph labelled by package paths, and subset of nodes
 createGraphNodes verbose lenient mdir pkgs subset = do
   unless (all (`elem` pkgs) subset) $
     error "Packages must be in the current directory"
@@ -62,8 +66,12 @@ createGraphNodes verbose lenient mdir pkgs subset = do
     pkgNode [] _ = Nothing
     pkgNode ((i,l):ns) p = if p == l then Just i else pkgNode ns p
 
--- | create a directed packages dependency graph
-createGraph :: Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO (Gr FilePath ())
+-- | Create a directed dependency graph for a set of packages
+createGraph :: Bool -- ^ verbose
+            -> Bool -- ^ lenient (skip rpmspec failures)
+            -> Maybe FilePath -- ^ look for spec file in a subdirectory
+            -> [FilePath] -- ^ package paths (directories or spec filepaths)
+            -> IO (Gr FilePath ()) -- ^ dependency graph labelled by package paths
 createGraph verbose lenient mdir pkgdirs = do
   metadata <- catMaybes <$> mapM readSpecMetadata pkgdirs
   let deps = mapMaybe (getDepsSrcResolved metadata) pkgdirs
@@ -188,12 +196,14 @@ rpmspecParse lenient spec = do
     ExitFailure _ -> if lenient then return Nothing else exitFailure
     ExitSuccess -> return $ Just out
 
+-- | Return the list of dependency layers of a graph
 packageLayers :: Gr FilePath () -> [[FilePath]]
 packageLayers graph =
   if Graph.isEmpty graph then []
   else
     let layer = lowestLayer graph
     in map snd layer : packageLayers (Graph.delNodes (map fst layer) graph)
+
 
 lowestLayer :: Gr FilePath () -> [Graph.LNode FilePath]
 lowestLayer graph =
@@ -203,6 +213,7 @@ packageLeaves :: Gr FilePath () -> [FilePath]
 packageLeaves graph =
   map snd $ Graph.labNodes $ Graph.nfilter ((==0) . Graph.outdeg graph) graph
 
+-- | Returns packages independent of all the rest of the graph
 separatePackages :: Gr FilePath () -> [FilePath]
 separatePackages graph =
   map snd $ Graph.labNodes $ Graph.nfilter ((==0) . Graph.deg graph) graph
