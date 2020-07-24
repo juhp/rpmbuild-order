@@ -1,7 +1,8 @@
-# 0.4.0 (2020-07-xx)
+# 0.4.0 (2020-07-24)
 - performance: rework just to use String and only parse spec files once
 - sort now defaults to parallel output, with options for combined, connected, and separated output
-- new 'chain' command for chain-build format output
+- new 'layers' command outputs packages in ordered independent layers
+- new 'chain' command output in fedora chain-build format
 - new 'leaves' commands to list outer leaf packages
 - new 'roots' commands lists lowest dependencies
 - expose a library with 2 modules: low-level Graph and high-level Order:
@@ -9,7 +10,8 @@
     dependencyLayers
   - Distribution.RPM.Build.Graph provides: createGraph, createGraphNodes,
     subgraph, packageLayers
-- graph Nodes no longer carry redundant dependency list or spec path
+- graph Nodes now only labelled by spec filepath
+  and no longer carry redundant dependency list
 
 # 0.3.1 (2020-07-04)
 - fix detection of circular dependencies (bug introduced in 0.3)
