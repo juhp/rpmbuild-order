@@ -41,6 +41,8 @@ main =
     depsPackages False <$> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "rdeps" "sort dependents" $
     depsPackages True <$> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
+  , Subcommand "layers" "ordered output suitable for a chain-build" $
+    layerPackages <$> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "chain" "ordered output suitable for a chain-build" $
     chainPackages <$> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "leaves" "List of the top leaves of package graph" $
@@ -90,6 +92,14 @@ listDirectory path =
   filter f <$> getDirectoryContents path
   where f filename = filename /= "." && filename /= ".."
 #endif
+
+layerPackages :: Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
+layerPackages verbose lenient combine mdir pkgs = do
+  graph <- createGraph verbose lenient mdir pkgs
+  if combine then printLayers graph
+    else mapM_ (printLayers . subgraph graph) (DFS.components graph)
+  where
+    printLayers =  putStrLn . unlines . map unwords . packageLayers
 
 chainPackages :: Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 chainPackages verbose lenient combine mdir pkgs = do
