@@ -3,20 +3,20 @@
 
 module Distribution.RPM.Build.Graph
   (createGraph,
-   createGraphNodes,
-   subgraph,
+   subGraphNodes,
+   subgraph',
    packageLayers,
    lowestLayer,
    packageLeaves,
-   separatePackages
+   separatePackages,
+   PackageGraph
   ) where
 
 import qualified Data.CaseInsensitive as CI
-import Data.Graph.Inductive.Query.DFS (scc)
-import Data.Graph.Inductive.Tree (Gr)
-import qualified Data.Graph.Inductive.Graph as Graph
+import Data.Graph.Inductive.Query.DFS (scc, xdfWith)
+import Data.Graph.Inductive.PatriciaTree (Gr)
+import qualified Data.Graph.Inductive.Graph as G
 
-import qualified Data.Set as Set
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
@@ -48,21 +48,16 @@ data SourcePackage =
    }
    deriving Eq
 
+type PackageGraph = Gr FilePath ()
+
 -- | Create a directed package dependency graph with respect to a subset of packages
-createGraphNodes :: Bool -- ^ verbose
-                 -> Bool -- ^ lenient (skip rpmspec failures)
-                 -> Bool -- ^ reverse dependency graph
-                 -> Maybe FilePath -- ^ look for spec file in a subdirectory
-                 -> [FilePath] -- ^ package paths (directories or spec filepaths)
-                 -> [FilePath] -- ^ subset of packages to start from
-                 -> IO (Gr FilePath (), [Graph.Node]) -- ^ dependency graph labelled by package paths, and subset of nodes
-createGraphNodes verbose lenient rev mdir pkgs subset = do
-  unless (all (`elem` pkgs) subset) $
-    error "Packages must be in the current directory"
-  graph <- createGraph verbose lenient rev mdir pkgs
-  let nodes = Graph.labNodes graph
+subGraphNodes :: [FilePath] -- ^ subset of packages to start from
+              -> PackageGraph -- ^ dependency graph
+              -> PackageGraph -- ^ dependency subgraph
+subGraphNodes subset graph =
+  let nodes = G.labNodes graph
       subnodes = mapMaybe (pkgNode nodes) subset
-  return (graph, subnodes)
+  in snd $ xdfWith G.suc' (const ()) subnodes graph
   where
     pkgNode [] _ = Nothing
     pkgNode ((i,l):ns) p = if p == l then Just i else pkgNode ns p
@@ -75,7 +70,7 @@ createGraph :: Bool -- ^ verbose
             -> Bool -- ^ reverse dependency graph
             -> Maybe FilePath -- ^ look for spec file in a subdirectory
             -> [FilePath] -- ^ package paths (directories or spec filepaths)
-            -> IO (Gr FilePath ()) -- ^ dependency graph labelled by package paths
+            -> IO (PackageGraph) -- ^ dependency graph labelled by package paths
 createGraph verbose lenient rev mdir pkgdirs = do
   metadata <- catMaybes <$> mapM readSpecMetadata pkgdirs
   let deps = mapMaybe (getDepsSrcResolved metadata) pkgdirs
@@ -138,7 +133,7 @@ createGraph verbose lenient rev mdir pkgdirs = do
                 in extractMetadata pkg (subpkg : provs, brs) ls
               _ -> extractMetadata pkg acc ls
 
-    getBuildGraph :: [SourcePackage] -> Gr FilePath ()
+    getBuildGraph :: [SourcePackage] -> PackageGraph
     getBuildGraph srcPkgs =
        let nodes = zip [0..] srcPkgs
            nodeDict = zip (map packagePath srcPkgs) [0..]
@@ -149,9 +144,9 @@ createGraph verbose lenient rev mdir pkgdirs = do
               return $ if rev
                        then (dstNode, srcNode, ())
                        else (srcNode, dstNode,  ())
-       in Graph.mkGraph (map (fmap packagePath) nodes) edges
+       in G.mkGraph (map (fmap packagePath) nodes) edges
 
-    checkForCycles :: Monad m => Gr FilePath () -> m ()
+    checkForCycles :: Monad m => PackageGraph -> m ()
     checkForCycles graph =
        case getCycles graph of
           [] -> return ()
@@ -160,7 +155,7 @@ createGraph verbose lenient rev mdir pkgdirs = do
             "Cycles in dependencies:" :
             map (unwords . nodeLabels graph) cycles
       where
-        getCycles :: Gr a b -> [[Graph.Node]]
+        getCycles :: Gr a b -> [[G.Node]]
         getCycles =
            filter ((>= 2) . length) . scc
 
@@ -178,20 +173,13 @@ getDepsSrcResolved metadata pkg =
     fst3 (a,_,_) = a
     thd (_,_,c) = c
 
-nodeLabels :: Gr a b -> [Graph.Node] -> [a]
+nodeLabels :: Gr a b -> [G.Node] -> [a]
 nodeLabels graph =
    map (fromMaybe (error "node not found in graph") .
-        Graph.lab graph)
+        G.lab graph)
 
-subgraph :: Gr a b -> [Graph.Node] -> Gr a b
-subgraph graph nodes =
-   let nodeSet = Set.fromList nodes
-       edges = do
-           from <- nodes
-           (to, lab) <- Graph.lsuc graph from
-           guard $ Set.member from nodeSet && Set.member to nodeSet
-           return (from,to,lab)
-   in  Graph.mkGraph (zip nodes $ nodeLabels graph nodes) edges
+subgraph' :: Gr a b -> [G.Node] -> Gr a b
+subgraph' = flip G.subgraph
 
 -- returns the first word for each line
 rpmspecParse :: Bool -> FilePath -> IO (Maybe String)
@@ -203,23 +191,23 @@ rpmspecParse lenient spec = do
     ExitSuccess -> return $ Just out
 
 -- | Return the list of dependency layers of a graph
-packageLayers :: Gr FilePath () -> [[FilePath]]
+packageLayers :: PackageGraph -> [[FilePath]]
 packageLayers graph =
-  if Graph.isEmpty graph then []
+  if G.isEmpty graph then []
   else
     let layer = lowestLayer graph
-    in map snd layer : packageLayers (Graph.delNodes (map fst layer) graph)
+    in map snd layer : packageLayers (G.delNodes (map fst layer) graph)
 
 
-lowestLayer :: Gr FilePath () -> [Graph.LNode FilePath]
+lowestLayer :: PackageGraph -> [G.LNode FilePath]
 lowestLayer graph =
-  Graph.labNodes $ Graph.nfilter ((==0) . Graph.indeg graph) graph
+  G.labNodes $ G.nfilter ((==0) . G.indeg graph) graph
 
-packageLeaves :: Gr FilePath () -> [FilePath]
+packageLeaves :: PackageGraph -> [FilePath]
 packageLeaves graph =
-  map snd $ Graph.labNodes $ Graph.nfilter ((==0) . Graph.outdeg graph) graph
+  map snd $ G.labNodes $ G.nfilter ((==0) . G.outdeg graph) graph
 
 -- | Returns packages independent of all the rest of the graph
-separatePackages :: Gr FilePath () -> [FilePath]
+separatePackages :: PackageGraph -> [FilePath]
 separatePackages graph =
-  map snd $ Graph.labNodes $ Graph.nfilter ((==0) . Graph.deg graph) graph
+  map snd $ G.labNodes $ G.nfilter ((==0) . G.deg graph) graph

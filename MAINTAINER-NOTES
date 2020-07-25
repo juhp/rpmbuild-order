@@ -2,4 +2,5 @@ Release steps:
 
 1. update .cabal description
 2. update ChangeLog
+3. make rpmbuild-order.1
 3. hkgr

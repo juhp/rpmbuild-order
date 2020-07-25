@@ -11,8 +11,8 @@ import Control.Applicative (
                             (<$>), (<*>)
 #endif
                            )
-import qualified Data.Graph.Inductive.Graph as Graph
-import qualified Data.Graph.Inductive.Query.DFS as DFS
+-- import qualified Data.Graph.Inductive.Graph as Graph
+import Data.Graph.Inductive.Query.DFS (components)
 import Data.List.Extra
 
 #if !MIN_VERSION_simple_cmd_args(0,1,4)
@@ -28,6 +28,7 @@ import System.Directory (
   )
 
 import Distribution.RPM.Build.Graph
+import Distribution.RPM.Build.Order
 import Paths_rpmbuild_order (version)
 
 main :: IO ()
@@ -58,32 +59,17 @@ main =
     pkgArgs = map (dropSuffix "/") <$> some (argumentWith str "PKG...")
     componentsOpt =
       flagWith' Connected 'C' "connected" "Only include connected packages" <|>
-      flagWith' Separate 's' "separated" "Only list independent packages" <|>
+      flagWith' Separate 'i' "independent" "Only list independent packages" <|>
       flagWith Parallel Combine 'c' "combine" "Combine connected and independent packages"
 
-data Components = Parallel | Combine | Connected | Separate
-
 sortPackages :: Bool -> Bool -> Components -> Maybe FilePath -> [FilePath] -> IO ()
-sortPackages verbose lenient components mdir pkgs = do
-  graph <- createGraph verbose lenient True mdir pkgs
-  case components of
-    Parallel ->
-      mapM_ ((putStrLn . ('\n':) . unwords) . DFS.topsort' . subgraph graph) (DFS.components graph)
-    Combine -> (putStrLn . unwords . DFS.topsort') graph
-    Connected ->
-      mapM_ ((putStrLn . ('\n':) . unwords) . DFS.topsort' . subgraph graph) $ filter ((>1) . length) (DFS.components graph)
-    Separate ->
-      let independent = separatePackages graph
-      in mapM_ putStrLn independent
+sortPackages verbose lenient opts mdir pkgs = do
+  createGraph verbose lenient True mdir pkgs >>= sortGraph opts
 
 depsPackages :: Bool -> Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 depsPackages rev verbose lenient parallel mdir pkgs = do
   allpkgs <- filter ((/= '.') . head) <$> listDirectory "."
-  (graph, nodes) <- createGraphNodes verbose lenient (not rev) mdir allpkgs pkgs
-  let direction = if rev then Graph.suc' else Graph.pre'
-  sortPackages verbose lenient (if parallel then Parallel else Combine) mdir $ DFS.xdfsWith direction third nodes graph
-  where
-    third (_, _, c, _) = c
+  subGraphNodes pkgs <$> createGraph verbose lenient rev mdir allpkgs >>= sortGraph (if parallel then Parallel else Combine)
 
 #if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,5))
 #else
@@ -97,7 +83,7 @@ layerPackages :: Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 layerPackages verbose lenient combine mdir pkgs = do
   graph <- createGraph verbose lenient True mdir pkgs
   if combine then printLayers graph
-    else mapM_ (printLayers . subgraph graph) (DFS.components graph)
+    else mapM_ (printLayers . subgraph' graph) (components graph)
   where
     printLayers =  putStrLn . unlines . map unwords . packageLayers
 
@@ -105,7 +91,7 @@ chainPackages :: Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 chainPackages verbose lenient combine mdir pkgs = do
   graph <- createGraph verbose lenient True mdir pkgs
   if combine then doChain graph
-    else mapM_ (doChain . subgraph graph) (DFS.components graph)
+    else mapM_ (doChain . subgraph' graph) (components graph)
   where
     doChain graph =
       let chain = intercalate [":"] $ packageLayers graph

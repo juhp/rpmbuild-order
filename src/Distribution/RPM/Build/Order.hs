@@ -5,7 +5,9 @@ module Distribution.RPM.Build.Order
    dependencySortParallel,
    dependencyLayers,
    leafPackages,
-   independentPackages)
+   independentPackages,
+   Components (..),
+   sortGraph)
 where
 
 #if !MIN_VERSION_base(4,8,0)
@@ -24,7 +26,7 @@ dependencySort pkgs = do
 dependencySortParallel :: [FilePath] -> IO [[FilePath]]
 dependencySortParallel pkgs = do
   graph <- createGraph False False True Nothing pkgs
-  return $ map (topsort' . subgraph graph) (components graph)
+  return $ map (topsort' . subgraph' graph) (components graph)
 
 -- | group packages in dependency layers, lowest first
 dependencyLayers :: [FilePath] -> IO [[FilePath]]
@@ -41,3 +43,17 @@ independentPackages :: [FilePath] -> IO [FilePath]
 independentPackages pkgs = do
   graph <- createGraph False False True Nothing pkgs
   return $ separatePackages graph
+
+data Components = Parallel | Combine | Connected | Separate
+
+sortGraph :: Components -> PackageGraph -> IO ()
+sortGraph opt graph = do
+  case opt of
+    Parallel ->
+      mapM_ ((putStrLn . ('\n':) . unwords) . topsort' . subgraph' graph) (components graph)
+    Combine -> (putStrLn . unwords . topsort') graph
+    Connected ->
+      mapM_ ((putStrLn . ('\n':) . unwords) . topsort' . subgraph' graph) $ filter ((>1) . length) (components graph)
+    Separate ->
+      let independent = separatePackages graph
+      in mapM_ putStrLn independent
