@@ -51,14 +51,15 @@ data SourcePackage =
 -- | Create a directed package dependency graph with respect to a subset of packages
 createGraphNodes :: Bool -- ^ verbose
                  -> Bool -- ^ lenient (skip rpmspec failures)
+                 -> Bool -- ^ reverse dependency graph
                  -> Maybe FilePath -- ^ look for spec file in a subdirectory
                  -> [FilePath] -- ^ package paths (directories or spec filepaths)
                  -> [FilePath] -- ^ subset of packages to start from
                  -> IO (Gr FilePath (), [Graph.Node]) -- ^ dependency graph labelled by package paths, and subset of nodes
-createGraphNodes verbose lenient mdir pkgs subset = do
+createGraphNodes verbose lenient rev mdir pkgs subset = do
   unless (all (`elem` pkgs) subset) $
     error "Packages must be in the current directory"
-  graph <- createGraph verbose lenient mdir pkgs
+  graph <- createGraph verbose lenient rev mdir pkgs
   let nodes = Graph.labNodes graph
       subnodes = mapMaybe (pkgNode nodes) subset
   return (graph, subnodes)
@@ -67,12 +68,15 @@ createGraphNodes verbose lenient mdir pkgs subset = do
     pkgNode ((i,l):ns) p = if p == l then Just i else pkgNode ns p
 
 -- | Create a directed dependency graph for a set of packages
+-- If rev Note the arrows of the graph actually point back
+-- from the dependencies to the dependendent (parent/consumer) packages
 createGraph :: Bool -- ^ verbose
             -> Bool -- ^ lenient (skip rpmspec failures)
+            -> Bool -- ^ reverse dependency graph
             -> Maybe FilePath -- ^ look for spec file in a subdirectory
             -> [FilePath] -- ^ package paths (directories or spec filepaths)
             -> IO (Gr FilePath ()) -- ^ dependency graph labelled by package paths
-createGraph verbose lenient mdir pkgdirs = do
+createGraph verbose lenient rev mdir pkgdirs = do
   metadata <- catMaybes <$> mapM readSpecMetadata pkgdirs
   let deps = mapMaybe (getDepsSrcResolved metadata) pkgdirs
       spkgs = zipWith SourcePackage pkgdirs deps
@@ -142,7 +146,9 @@ createGraph verbose lenient mdir pkgdirs = do
               (srcNode,srcPkg) <- nodes
               dstNode <- mapMaybe (`lookup` nodeDict) (dependencies srcPkg)
               guard (dstNode /= srcNode)
-              return (dstNode, srcNode, ())
+              return $ if rev
+                       then (dstNode, srcNode, ())
+                       else (srcNode, dstNode,  ())
        in Graph.mkGraph (map (fmap packagePath) nodes) edges
 
     checkForCycles :: Monad m => Gr FilePath () -> m ()

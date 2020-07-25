@@ -65,7 +65,7 @@ data Components = Parallel | Combine | Connected | Separate
 
 sortPackages :: Bool -> Bool -> Components -> Maybe FilePath -> [FilePath] -> IO ()
 sortPackages verbose lenient components mdir pkgs = do
-  graph <- createGraph verbose lenient mdir pkgs
+  graph <- createGraph verbose lenient True mdir pkgs
   case components of
     Parallel ->
       mapM_ ((putStrLn . ('\n':) . unwords) . DFS.topsort' . subgraph graph) (DFS.components graph)
@@ -79,7 +79,7 @@ sortPackages verbose lenient components mdir pkgs = do
 depsPackages :: Bool -> Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 depsPackages rev verbose lenient parallel mdir pkgs = do
   allpkgs <- filter ((/= '.') . head) <$> listDirectory "."
-  (graph, nodes) <- createGraphNodes verbose lenient mdir allpkgs pkgs
+  (graph, nodes) <- createGraphNodes verbose lenient (not rev) mdir allpkgs pkgs
   let direction = if rev then Graph.suc' else Graph.pre'
   sortPackages verbose lenient (if parallel then Parallel else Combine) mdir $ DFS.xdfsWith direction third nodes graph
   where
@@ -95,7 +95,7 @@ listDirectory path =
 
 layerPackages :: Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 layerPackages verbose lenient combine mdir pkgs = do
-  graph <- createGraph verbose lenient mdir pkgs
+  graph <- createGraph verbose lenient True mdir pkgs
   if combine then printLayers graph
     else mapM_ (printLayers . subgraph graph) (DFS.components graph)
   where
@@ -103,7 +103,7 @@ layerPackages verbose lenient combine mdir pkgs = do
 
 chainPackages :: Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 chainPackages verbose lenient combine mdir pkgs = do
-  graph <- createGraph verbose lenient mdir pkgs
+  graph <- createGraph verbose lenient True mdir pkgs
   if combine then doChain graph
     else mapM_ (doChain . subgraph graph) (DFS.components graph)
   where
@@ -113,12 +113,12 @@ chainPackages verbose lenient combine mdir pkgs = do
 
 leavesPackages :: Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 leavesPackages verbose lenient mdir pkgs = do
-  graph <- createGraph verbose lenient mdir pkgs
+  graph <- createGraph verbose lenient True mdir pkgs
   let leaves = packageLeaves graph
   mapM_ putStrLn leaves
 
 rootPackages :: Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 rootPackages verbose lenient mdir pkgs = do
-  graph <- createGraph verbose lenient mdir pkgs
+  graph <- createGraph verbose lenient True mdir pkgs
   let roots = map snd $ lowestLayer graph
   mapM_ putStrLn roots
