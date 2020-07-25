@@ -70,7 +70,7 @@ createGraph :: Bool -- ^ verbose
             -> Bool -- ^ reverse dependency graph
             -> Maybe FilePath -- ^ look for spec file in a subdirectory
             -> [FilePath] -- ^ package paths (directories or spec filepaths)
-            -> IO (PackageGraph) -- ^ dependency graph labelled by package paths
+            -> IO PackageGraph -- ^ dependency graph labelled by package paths
 createGraph verbose lenient rev mdir paths = do
   metadata <- catMaybes <$> mapM readSpecMetadata paths
   let realpkgs = map fst3 metadata

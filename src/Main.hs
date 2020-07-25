@@ -69,7 +69,7 @@ sortPackages verbose lenient opts mdir pkgs = do
 depsPackages :: Bool -> Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 depsPackages rev verbose lenient parallel mdir pkgs = do
   allpkgs <- filter ((/= '.') . head) <$> listDirectory "."
-  subGraphNodes pkgs <$> createGraph verbose lenient rev mdir allpkgs >>= sortGraph (if parallel then Parallel else Combine)
+  createGraph verbose lenient rev mdir allpkgs >>= sortGraph (if parallel then Parallel else Combine) . subGraphNodes pkgs
 
 #if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,5))
 #else
