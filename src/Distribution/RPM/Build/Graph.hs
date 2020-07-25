@@ -71,39 +71,18 @@ createGraph :: Bool -- ^ verbose
             -> Maybe FilePath -- ^ look for spec file in a subdirectory
             -> [FilePath] -- ^ package paths (directories or spec filepaths)
             -> IO (PackageGraph) -- ^ dependency graph labelled by package paths
-createGraph verbose lenient rev mdir pkgdirs = do
-  metadata <- catMaybes <$> mapM readSpecMetadata pkgdirs
-  let deps = mapMaybe (getDepsSrcResolved metadata) pkgdirs
-      spkgs = zipWith SourcePackage pkgdirs deps
+createGraph verbose lenient rev mdir paths = do
+  metadata <- catMaybes <$> mapM readSpecMetadata paths
+  let realpkgs = map fst3 metadata
+      deps = mapMaybe (getDepsSrcResolved metadata) realpkgs
+      spkgs = zipWith SourcePackage realpkgs deps
       graph = getBuildGraph spkgs
   checkForCycles graph
   return graph
   where
-    -- FIXME seems too lenient for non-existent spec file
-    -- FIXME ignore dead.package instead?
-    findSpec :: FilePath -> IO (Maybe FilePath)
-    findSpec file =
-      if takeExtension file == ".spec"
-        then checkFile file
-        else do
-        dirp <- doesDirectoryExist file
-        if dirp
-          then
-          let dir = maybe file (file </>) mdir
-              pkg = takeBaseName file in
-            checkFile $ dir </> pkg ++ ".spec"
-          else error $ "No spec file found for " ++ file
-      where
-        checkFile :: FilePath -> IO (Maybe FilePath)
-        checkFile f = do
-          e <- doesFileExist f
-          if e
-            then return $ Just f
-            else return Nothing
-
     readSpecMetadata :: FilePath -> IO (Maybe (FilePath,[String],[String]))
-    readSpecMetadata dir = do
-      mspec <- findSpec dir
+    readSpecMetadata path = do
+      mspec <- findSpec path
       case mspec of
         Nothing -> return Nothing
         Just spec -> do
@@ -114,8 +93,30 @@ createGraph verbose lenient rev mdir pkgdirs = do
             Just content ->
               let pkg = takeBaseName spec
                   (provs,brs) = extractMetadata pkg ([],[]) $ lines content
-              in return $ Just (dir, provs, brs)
+              in return $ Just (path, provs, brs)
       where
+        -- FIXME seems too lenient for non-existent spec file
+        -- FIXME ignore dead.package instead?
+        findSpec :: FilePath -> IO (Maybe FilePath)
+        findSpec file =
+          if takeExtension file == ".spec"
+            then checkFile file
+            else do
+            dirp <- doesDirectoryExist file
+            if dirp
+              then
+              let dir = maybe file (file </>) mdir
+                  pkg = takeBaseName file in
+                checkFile $ dir </> pkg ++ ".spec"
+              else error $ "No spec file found for " ++ file
+          where
+            checkFile :: FilePath -> IO (Maybe FilePath)
+            checkFile f = do
+              e <- doesFileExist f
+              if e
+                then return $ Just f
+                else return Nothing
+
         extractMetadata :: FilePath -> ([String],[String]) -> [String] -> ([String],[String])
         extractMetadata _ acc [] = acc
         extractMetadata pkg acc@(provs,brs) (l:ls) =
@@ -170,8 +171,10 @@ getDepsSrcResolved metadata pkg =
         [p] -> p
         ps -> error $ pkg ++ ": " ++ br ++ " is provided by: " ++ unwords ps
 
-    fst3 (a,_,_) = a
     thd (_,_,c) = c
+
+fst3 :: (a,b,c) -> a
+fst3 (a,_,_) = a
 
 nodeLabels :: Gr a b -> [G.Node] -> [a]
 nodeLabels graph =
