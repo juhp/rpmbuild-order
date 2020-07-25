@@ -95,27 +95,33 @@ createGraph verbose lenient rev mdir paths = do
                   (provs,brs) = extractMetadata pkg ([],[]) $ lines content
               in return $ Just (path, provs, brs)
       where
-        -- FIXME seems too lenient for non-existent spec file
-        -- FIXME ignore dead.package instead?
         findSpec :: FilePath -> IO (Maybe FilePath)
         findSpec file =
           if takeExtension file == ".spec"
-            then checkFile file
+            then checkFile lenient file
             else do
             dirp <- doesDirectoryExist file
             if dirp
-              then
+              then do
               let dir = maybe file (file </>) mdir
-                  pkg = takeBaseName file in
-                checkFile $ dir </> pkg ++ ".spec"
+                  pkg = takeBaseName file
+              mspec <- checkFile True $ dir </> pkg ++ ".spec"
+              case mspec of
+                Nothing -> do
+                  dead <- doesFileExist $ dir </> "dead.package"
+                  return $ if dead || lenient then Nothing
+                           else error $ "No spec file found in " ++ file
+                Just spec -> return $ Just spec
               else error $ "No spec file found for " ++ file
           where
-            checkFile :: FilePath -> IO (Maybe FilePath)
-            checkFile f = do
+            checkFile :: Bool -> FilePath -> IO (Maybe FilePath)
+            checkFile may f = do
               e <- doesFileExist f
               if e
                 then return $ Just f
-                else return Nothing
+                else return $ if may
+                              then Nothing
+                              else error $ f ++ " not found"
 
         extractMetadata :: FilePath -> ([String],[String]) -> [String] -> ([String],[String])
         extractMetadata _ acc [] = acc
