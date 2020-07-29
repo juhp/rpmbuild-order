@@ -11,15 +11,15 @@ import Control.Applicative (
                             (<$>), (<*>)
 #endif
                            )
--- import qualified Data.Graph.Inductive.Graph as Graph
+import Control.Monad.Extra
 import Data.Graph.Inductive.Query.DFS (components)
-import Data.List.Extra
+import Data.List
 
 #if !MIN_VERSION_simple_cmd_args(0,1,4)
 import Options.Applicative (str)
 #endif
 import SimpleCmdArgs
-import System.Directory (
+import System.Directory (doesDirectoryExist,
 #if MIN_VERSION_directory(1,2,5)
                          listDirectory
 #else
@@ -64,12 +64,17 @@ main =
 
 sortPackages :: Bool -> Bool -> Components -> Maybe FilePath -> [FilePath] -> IO ()
 sortPackages verbose lenient opts mdir pkgs = do
-  createGraph verbose lenient True mdir pkgs >>= sortGraph opts
+  createGraph' verbose lenient True mdir pkgs >>= sortGraph opts
 
 depsPackages :: Bool -> Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 depsPackages rev verbose lenient parallel mdir pkgs = do
-  allpkgs <- filter ((/= '.') . head) <$> listDirectory "."
-  createGraph verbose lenient rev mdir allpkgs >>= sortGraph (if parallel then Parallel else Combine) . subGraphNodes pkgs
+  unlessM (and <$> mapM doesDirectoryExist pkgs) $
+    error "Please use package directory paths"
+  listDirectory "." >>=
+    -- filter out dotfiles
+    createGraph' verbose lenient (not rev) mdir . filter ((/= '.') . head) >>=
+    createGraph' verbose lenient True mdir . dependencyNodes pkgs >>=
+    sortGraph (if parallel then Parallel else Combine)
 
 #if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,5))
 #else
@@ -81,7 +86,7 @@ listDirectory path =
 
 layerPackages :: Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 layerPackages verbose lenient combine mdir pkgs = do
-  graph <- createGraph verbose lenient True mdir pkgs
+  graph <- createGraph' verbose lenient True mdir pkgs
   if combine then printLayers graph
     else mapM_ (printLayers . subgraph' graph) (components graph)
   where
@@ -89,7 +94,7 @@ layerPackages verbose lenient combine mdir pkgs = do
 
 chainPackages :: Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 chainPackages verbose lenient combine mdir pkgs = do
-  graph <- createGraph verbose lenient True mdir pkgs
+  graph <- createGraph' verbose lenient True mdir pkgs
   if combine then doChain graph
     else mapM_ (doChain . subgraph' graph) (components graph)
   where
@@ -99,12 +104,12 @@ chainPackages verbose lenient combine mdir pkgs = do
 
 leavesPackages :: Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 leavesPackages verbose lenient mdir pkgs = do
-  graph <- createGraph verbose lenient True mdir pkgs
+  graph <- createGraph' verbose lenient True mdir pkgs
   let leaves = packageLeaves graph
   mapM_ putStrLn leaves
 
 rootPackages :: Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 rootPackages verbose lenient mdir pkgs = do
-  graph <- createGraph verbose lenient True mdir pkgs
+  graph <- createGraph' verbose lenient True mdir pkgs
   let roots = map snd $ lowestLayer graph
   mapM_ putStrLn roots

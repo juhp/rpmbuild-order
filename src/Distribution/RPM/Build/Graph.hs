@@ -3,7 +3,8 @@
 
 module Distribution.RPM.Build.Graph
   (createGraph,
-   subGraphNodes,
+   createGraph',
+   dependencyNodes,
    subgraph',
    packageLayers,
    lowestLayer,
@@ -13,7 +14,7 @@ module Distribution.RPM.Build.Graph
   ) where
 
 import qualified Data.CaseInsensitive as CI
-import Data.Graph.Inductive.Query.DFS (scc, xdfWith)
+import Data.Graph.Inductive.Query.DFS (scc, xdfsWith)
 import Data.Graph.Inductive.PatriciaTree (Gr)
 import qualified Data.Graph.Inductive.Graph as G
 
@@ -50,14 +51,15 @@ data SourcePackage =
 
 type PackageGraph = Gr FilePath ()
 
--- | Create a directed package dependency graph with respect to a subset of packages
-subGraphNodes :: [FilePath] -- ^ subset of packages to start from
-              -> PackageGraph -- ^ dependency graph
-              -> PackageGraph -- ^ dependency subgraph
-subGraphNodes subset graph =
+-- | Get all of the dependencies of a subset of one or more packages within full PackageGraph
+-- The subset paths should be written in the same way as for the graph.
+dependencyNodes :: [FilePath] -- ^ subset of packages to start from
+                -> PackageGraph -- ^ dependency graph
+                -> [FilePath] -- ^ dependencies of subset
+dependencyNodes subset graph =
   let nodes = G.labNodes graph
       subnodes = mapMaybe (pkgNode nodes) subset
-  in snd $ xdfWith G.suc' (const ()) subnodes graph
+  in xdfsWith G.pre' third subnodes graph
   where
     pkgNode [] _ = Nothing
     pkgNode ((i,l):ns) p = if p == l then Just i else pkgNode ns p
@@ -65,13 +67,17 @@ subGraphNodes subset graph =
 -- | Create a directed dependency graph for a set of packages
 -- If rev Note the arrows of the graph actually point back
 -- from the dependencies to the dependendent (parent/consumer) packages
-createGraph :: Bool -- ^ verbose
-            -> Bool -- ^ lenient (skip rpmspec failures)
-            -> Bool -- ^ reverse dependency graph
-            -> Maybe FilePath -- ^ look for spec file in a subdirectory
-            -> [FilePath] -- ^ package paths (directories or spec filepaths)
+createGraph :: [FilePath] -- ^ package paths (directories or spec filepaths)
             -> IO PackageGraph -- ^ dependency graph labelled by package paths
-createGraph verbose lenient rev mdir paths = do
+createGraph = createGraph' False False True Nothing
+
+createGraph' :: Bool -- ^ verbose
+             -> Bool -- ^ lenient (skip rpmspec failures)
+             -> Bool -- ^ reverse dependency graph
+             -> Maybe FilePath -- ^ look for spec file in a subdirectory
+             -> [FilePath] -- ^ package paths (directories or spec filepaths)
+             -> IO PackageGraph -- ^ dependency graph labelled by package paths
+createGraph' verbose lenient rev mdir paths = do
   metadata <- catMaybes <$> mapM readSpecMetadata paths
   let realpkgs = map fst3 metadata
       deps = mapMaybe (getDepsSrcResolved metadata) realpkgs
