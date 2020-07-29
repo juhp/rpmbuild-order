@@ -21,11 +21,15 @@ Description:
   are affected when a low-level package changes.
 Tested-with:       GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,
                    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2,
-                   GHC == 8.4.4, GHC == 8.6.5, GHC == 8.8.3,
+                   GHC == 8.4.4, GHC == 8.6.5, GHC == 8.8.4,
                    GHC == 8.10.1
 Cabal-Version:     >=1.10
 Build-Type:        Simple
 Extra-source-files: README.md TODO ChangeLog.md rpmbuild-order.1
+                    test/pkgs/A/A.spec
+                    test/pkgs/B/B.spec
+                    test/pkgs/C/C.spec
+                    test/pkgs/D1.0/D1.0.spec
 
 source-repository head
   type:     git
