@@ -2,8 +2,8 @@
 - performance: rework just to use String and only parse spec files once
   and also use faster PatriciaTree.Gr
   On about 500 packages roughly twice as fast as 0.3.1
-- sort now defaults to separate dependency stacks output, with options for combined, connected, and independent packages only output
-- new 'layers' command outputs packages in ordered independent layers
+- sort now defaults to outputting separate dependency stacks, with options for combined, connected, and independent packages only
+- new 'layers' command outputs packages in ordered dependency independent layers
 - new 'chain' command outputs Fedora chain-build format
 - new 'leaves' commands to list outer leaf packages
 - new 'roots' commands lists lowest dependencies
@@ -12,9 +12,9 @@
     dependencyLayers, sortGraph output
   - Distribution.RPM.Build.Graph provides: createGraph, dependencyNodes,
     subgraph', packageLayers, etc
-- graph Nodes now only labelled by package/spec filepath
-  and no longer carry redundant dependency list
-- add a basic testsuite
+- graph Nodes are now only labelled by package/spec filepath
+  and no longer carry redundant dependency lists
+- add a basic testsuite for the library
 
 # 0.3.1 (2020-07-04)
 - fix detection of circular dependencies (bug introduced in 0.3)
