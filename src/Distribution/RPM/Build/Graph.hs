@@ -1,6 +1,16 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+{-|
+This module provides simple dependency graph making for rpm packages:
+
+@
+import Distribution.RPM.Build.Graph
+
+graph <- createGraph ["pkg1", "pkg2", "../pkg3"]
+@
+-}
+
 module Distribution.RPM.Build.Graph
   (createGraph,
    createGraph',
@@ -49,9 +59,10 @@ data SourcePackage =
    }
    deriving Eq
 
+-- | alias for a package dependency graph
 type PackageGraph = Gr FilePath ()
 
--- | Get all of the dependencies of a subset of one or more packages within full PackageGraph
+-- | Get all of the dependencies of a subset of one or more packages within full PackageGraph.
 -- The subset paths should be written in the same way as for the graph.
 dependencyNodes :: [FilePath] -- ^ subset of packages to start from
                 -> PackageGraph -- ^ dependency graph
@@ -61,18 +72,22 @@ dependencyNodes subset graph =
       subnodes = mapMaybe (pkgNode nodes) subset
   in xdfsWith G.pre' third subnodes graph
   where
+    pkgNode :: [G.LNode FilePath] -> FilePath -> Maybe Int
     pkgNode [] _ = Nothing
     pkgNode ((i,l):ns) p = if dropSuffix "/" p == dropSuffix "/" l then Just i else pkgNode ns p
 
     third (_, _, c, _) = c
 
 -- | Create a directed dependency graph for a set of packages
--- If rev Note the arrows of the graph actually point back
--- from the dependencies to the dependendent (parent/consumer) packages
+-- This is a convenience wrapper for createGraph' False False True Nothing
 createGraph :: [FilePath] -- ^ package paths (directories or spec filepaths)
             -> IO PackageGraph -- ^ dependency graph labelled by package paths
 createGraph = createGraph' False False True Nothing
 
+-- | Create a directed dependency graph for a set of packages
+-- For the (createGraph default) reverse deps graph the arrows point back
+-- from the dependencies to the dependendent (parent/consumer) packages,
+-- and this allows forward sorting by dependencies (ie lowest deps first).
 createGraph' :: Bool -- ^ verbose
              -> Bool -- ^ lenient (skip rpmspec failures)
              -> Bool -- ^ reverse dependency graph
@@ -196,10 +211,10 @@ nodeLabels graph =
    map (fromMaybe (error "node not found in graph") .
         G.lab graph)
 
+-- | A flipped version of subgraph
 subgraph' :: Gr a b -> [G.Node] -> Gr a b
 subgraph' = flip G.subgraph
 
--- returns the first word for each line
 rpmspecParse :: Bool -> FilePath -> IO (Maybe String)
 rpmspecParse lenient spec = do
   (res, out, err) <- readProcessWithExitCode "rpmspec" ["-P", "--define", "ghc_version any", spec] ""
@@ -208,7 +223,7 @@ rpmspecParse lenient spec = do
     ExitFailure _ -> if lenient then return Nothing else exitFailure
     ExitSuccess -> return $ Just out
 
--- | Return the list of dependency layers of a graph
+-- | Return the bottom-up list of dependency layers of a graph
 packageLayers :: PackageGraph -> [[FilePath]]
 packageLayers graph =
   if G.isEmpty graph then []
@@ -216,11 +231,12 @@ packageLayers graph =
     let layer = lowestLayer graph
     in map snd layer : packageLayers (G.delNodes (map fst layer) graph)
 
-
+-- | The lowest dependencies of a PackageGraph
 lowestLayer :: PackageGraph -> [G.LNode FilePath]
 lowestLayer graph =
   G.labNodes $ G.nfilter ((==0) . G.indeg graph) graph
 
+-- | The leaf (outer) packages of a PackageGraph
 packageLeaves :: PackageGraph -> [FilePath]
 packageLeaves graph =
   map snd $ G.labNodes $ G.nfilter ((==0) . G.outdeg graph) graph
