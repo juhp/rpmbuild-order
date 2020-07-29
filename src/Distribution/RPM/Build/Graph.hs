@@ -18,6 +18,7 @@ module Distribution.RPM.Build.Graph
    subgraph',
    packageLayers,
    lowestLayer,
+   lowestLayer',
    packageLeaves,
    separatePackages,
    PackageGraph
@@ -228,12 +229,17 @@ packageLayers :: PackageGraph -> [[FilePath]]
 packageLayers graph =
   if G.isEmpty graph then []
   else
-    let layer = lowestLayer graph
+    let layer = lowestLayer' graph
     in map snd layer : packageLayers (G.delNodes (map fst layer) graph)
 
 -- | The lowest dependencies of a PackageGraph
-lowestLayer :: PackageGraph -> [G.LNode FilePath]
+lowestLayer :: PackageGraph -> [FilePath]
 lowestLayer graph =
+  map snd $ G.labNodes $ G.nfilter ((==0) . G.indeg graph) graph
+
+-- | The lowest dependency nodes of a PackageGraph
+lowestLayer' :: PackageGraph -> [G.LNode FilePath]
+lowestLayer' graph =
   G.labNodes $ G.nfilter ((==0) . G.indeg graph) graph
 
 -- | The leaf (outer) packages of a PackageGraph

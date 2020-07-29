@@ -105,11 +105,9 @@ chainPackages verbose lenient combine mdir pkgs = do
 leavesPackages :: Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 leavesPackages verbose lenient mdir pkgs = do
   graph <- createGraph' verbose lenient True mdir pkgs
-  let leaves = packageLeaves graph
-  mapM_ putStrLn leaves
+  mapM_ putStrLn $ packageLeaves graph
 
 rootPackages :: Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 rootPackages verbose lenient mdir pkgs = do
   graph <- createGraph' verbose lenient True mdir pkgs
-  let roots = map snd $ lowestLayer graph
-  mapM_ putStrLn roots
+  mapM_ putStrLn $ lowestLayer graph
