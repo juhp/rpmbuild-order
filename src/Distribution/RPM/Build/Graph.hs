@@ -5,9 +5,9 @@
 This module provides simple dependency graph making for rpm packages:
 
 @
-import Distribution.RPM.Build.Graph
+import "Distribution.RPM.Build.Graph"
 
-graph <- createGraph ["pkg1", "pkg2", "../pkg3"]
+graph <- 'createGraph' ["pkg1", "pkg2", "../pkg3"]
 @
 -}
 

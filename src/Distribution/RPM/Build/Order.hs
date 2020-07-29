@@ -4,9 +4,9 @@
 This module provides dependency sorting functions
 
 @
-import Distribution.RPM.Build.Order
+import "Distribution.RPM.Build.Order"
 
-dependencySort ["pkg1", "pkg2", "../pkg3"]
+'dependencySort' ["pkg1", "pkg2", "../pkg3"]
 
 => ["pkg2", "../pkg3", "pkg1"]
 @
