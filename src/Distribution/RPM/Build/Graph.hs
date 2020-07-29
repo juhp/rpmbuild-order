@@ -130,6 +130,7 @@ createGraph verbose lenient rev mdir paths = do
             if length ws < 2 then extractMetadata pkg acc ls
             else case CI.mk (head ws) of
               "BuildRequires:" -> extractMetadata pkg (provs,(head . tail) ws : brs) ls
+              "Name:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
               "Provides:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
               "%package" ->
                 let subpkg =
