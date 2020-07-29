@@ -56,7 +56,7 @@ main =
     lenientOpt = switchWith 'l' "lenient" "Ignore rpmspec errors"
     combineOpt = switchWith 'c' "combine" "Combine independent packages"
     subdirOpt = optional (strOptionWith 'd' "dir" "SUBDIR" "Branch directory")
-    pkgArgs = map (dropSuffix "/") <$> some (argumentWith str "PKG...")
+    pkgArgs = some (argumentWith str "PKG...")
     componentsOpt =
       flagWith' Connected 'C' "connected" "Only include connected packages" <|>
       flagWith' Separate 'i' "independent" "Only list independent packages" <|>

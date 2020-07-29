@@ -65,6 +65,7 @@ Library
                  case-insensitive,
                  containers,
                  directory,
+                 extra,
                  filepath,
                  fgl,
                  process

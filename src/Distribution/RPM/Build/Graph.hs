@@ -23,7 +23,7 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad (guard, when, unless)
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
-import Data.List
+import Data.List.Extra (dropSuffix, find)
 import System.Directory (doesDirectoryExist, doesFileExist,
 #if !MIN_VERSION_directory(1,2,5)
                          getDirectoryContents
@@ -62,7 +62,9 @@ dependencyNodes subset graph =
   in xdfsWith G.pre' third subnodes graph
   where
     pkgNode [] _ = Nothing
-    pkgNode ((i,l):ns) p = if p == l then Just i else pkgNode ns p
+    pkgNode ((i,l):ns) p = if dropSuffix "/" p == dropSuffix "/" l then Just i else pkgNode ns p
+
+    third (_, _, c, _) = c
 
 -- | Create a directed dependency graph for a set of packages
 -- If rev Note the arrows of the graph actually point back
@@ -88,7 +90,7 @@ createGraph' verbose lenient rev mdir paths = do
   where
     readSpecMetadata :: FilePath -> IO (Maybe (FilePath,[String],[String]))
     readSpecMetadata path = do
-      mspec <- findSpec path
+      mspec <- findSpec
       case mspec of
         Nothing -> return Nothing
         Just spec -> do
@@ -99,26 +101,26 @@ createGraph' verbose lenient rev mdir paths = do
             Just content ->
               let pkg = takeBaseName spec
                   (provs,brs) = extractMetadata pkg ([],[]) $ lines content
-              in return $ Just (path, provs, brs)
+              in return (Just (path, provs, brs))
       where
-        findSpec :: FilePath -> IO (Maybe FilePath)
-        findSpec file =
-          if takeExtension file == ".spec"
-            then checkFile lenient file
+        findSpec :: IO (Maybe FilePath)
+        findSpec =
+          if takeExtension path == ".spec"
+            then checkFile lenient path
             else do
-            dirp <- doesDirectoryExist file
+            dirp <- doesDirectoryExist path
             if dirp
               then do
-              let dir = maybe file (file </>) mdir
-                  pkg = takeBaseName file
+              let dir = maybe path (path </>) mdir
+                  pkg = takeFileName $ dropSuffix "/" path
               mspec <- checkFile True $ dir </> pkg ++ ".spec"
               case mspec of
                 Nothing -> do
                   dead <- doesFileExist $ dir </> "dead.package"
                   return $ if dead || lenient then Nothing
-                           else error $ "No spec file found in " ++ file
+                           else error $ "No spec file found in " ++ path
                 Just spec -> return $ Just spec
-              else error $ "No spec file found for " ++ file
+              else error $ "No spec file found for " ++ path
           where
             checkFile :: Bool -> FilePath -> IO (Maybe FilePath)
             checkFile may f = do
