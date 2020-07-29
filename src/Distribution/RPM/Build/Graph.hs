@@ -110,7 +110,7 @@ createGraph' verbose lenient rev mdir paths = do
         Nothing -> return Nothing
         Just spec -> do
           when verbose $ hPutStrLn stderr spec
-          mcontent <- rpmspecParse lenient spec
+          mcontent <- rpmspecParse spec
           case mcontent of
             Nothing -> return Nothing
             Just content ->
@@ -190,38 +190,38 @@ createGraph' verbose lenient rev mdir paths = do
         getCycles =
            filter ((>= 2) . length) . scc
 
-getDepsSrcResolved :: [(FilePath,[String],[String])] -> FilePath -> Maybe [FilePath]
-getDepsSrcResolved metadata pkg =
-  map resolveBase . thd <$> find ((== pkg) . fst3) metadata
-  where
-    resolveBase :: FilePath -> FilePath
-    resolveBase br =
-      case mapMaybe (\ (p,provs,_) -> if br `elem` provs then Just p else Nothing) metadata of
-        [] -> br
-        [p] -> p
-        ps -> error $ pkg ++ ": " ++ br ++ " is provided by: " ++ unwords ps
+    getDepsSrcResolved :: [(FilePath,[String],[String])] -> FilePath -> Maybe [FilePath]
+    getDepsSrcResolved metadata pkg =
+      map resolveBase . thd <$> find ((== pkg) . fst3) metadata
+      where
+        resolveBase :: FilePath -> FilePath
+        resolveBase br =
+          case mapMaybe (\ (p,provs,_) -> if br `elem` provs then Just p else Nothing) metadata of
+            [] -> br
+            [p] -> p
+            ps -> error $ pkg ++ ": " ++ br ++ " is provided by: " ++ unwords ps
 
-    thd (_,_,c) = c
+        thd (_,_,c) = c
 
-fst3 :: (a,b,c) -> a
-fst3 (a,_,_) = a
+    fst3 :: (a,b,c) -> a
+    fst3 (a,_,_) = a
 
-nodeLabels :: Gr a b -> [G.Node] -> [a]
-nodeLabels graph =
-   map (fromMaybe (error "node not found in graph") .
-        G.lab graph)
+    nodeLabels :: Gr a b -> [G.Node] -> [a]
+    nodeLabels graph =
+       map (fromMaybe (error "node not found in graph") .
+            G.lab graph)
+
+    rpmspecParse :: FilePath -> IO (Maybe String)
+    rpmspecParse spec = do
+      (res, out, err) <- readProcessWithExitCode "rpmspec" ["-P", "--define", "ghc_version any", spec] ""
+      unless (null err) $ hPutStrLn stderr err
+      case res of
+        ExitFailure _ -> if lenient then return Nothing else exitFailure
+        ExitSuccess -> return $ Just out
 
 -- | A flipped version of subgraph
 subgraph' :: Gr a b -> [G.Node] -> Gr a b
 subgraph' = flip G.subgraph
-
-rpmspecParse :: Bool -> FilePath -> IO (Maybe String)
-rpmspecParse lenient spec = do
-  (res, out, err) <- readProcessWithExitCode "rpmspec" ["-P", "--define", "ghc_version any", spec] ""
-  unless (null err) $ hPutStrLn stderr err
-  case res of
-    ExitFailure _ -> if lenient then return Nothing else exitFailure
-    ExitSuccess -> return $ Just out
 
 -- | Return the bottom-up list of dependency layers of a graph
 packageLayers :: PackageGraph -> [[FilePath]]
