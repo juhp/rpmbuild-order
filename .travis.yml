@@ -16,4 +16,4 @@ ghc:
 install:
   - cabal update
 script:
-  - cabal build && cabal test && cabal haddock
+  - cabal build && cabal haddock
