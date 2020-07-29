@@ -19,6 +19,8 @@ Description:
   for one or more packages, provided all the packages are checked out
   in neighboring directories. This is also useful to see what packages
   are affected when a low-level package changes.
+
+  Since version 0.4 there is a library too.
 Tested-with:       GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,
                    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2,
                    GHC == 8.4.4, GHC == 8.6.5, GHC == 8.8.4,
