@@ -4,7 +4,7 @@
 
 # rpmbuild-order
 
-This package based on code from [cabal-sort](http://hackage.haskell.org/package/cabal-sort), sorts rpm package spec files by build order.
+This package originally based on code from [cabal-sort](http://hackage.haskell.org/package/cabal-sort), sorts rpm package spec files by build order.
 
     $ rpmbuild-order --help
     $ rpmbuild-order sort mycore mylib myapp
@@ -12,16 +12,16 @@ This package based on code from [cabal-sort](http://hackage.haskell.org/package/
     mycore
     myapp
 
-The arguments passed can either be directories named after the package, or spec files.
-
-By default it outputs the package names, but it can also output
-the spec filenames or directory paths for easier scripting.
+The arguments passed can either be directories containing the package, or spec files.
 
 Using the rpmbuild-order `deps` and `rdeps` commands the ordered
 dependencies and reverse dependencies of a package can be obtained
 from the current set of checked out package sources.
 
-## Known problems
+As of version 0.4, a library is also provided.
+See the modules' documentation for details.
+
+## Notes and known problems
 1. Given packages A, B, C, where C depends on B, and B depends on A,
 and you call
 
@@ -35,6 +35,10 @@ for a sequence of builds.
 However the `deps` and `rdeps` commands take
 other neighbouring package directories into account.
 
-2. repoquery is not used to resolve Requires or filelists for Provides.
+2. repoquery is not used to resolve meta-dependencies or files to packages.
 So if a package BuildRequires a file, it will not be resolved to a package.
-This may get addressed in a future version.
+This may get addressed some day, but file dependencies seem less common for
+BuildRequires than Requires.
+
+3. rpmspec is used to parse spec files (for macro expansion etc):
+so missing macros packages may lead to erroneous results.
