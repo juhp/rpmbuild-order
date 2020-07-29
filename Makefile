@@ -1,8 +1,8 @@
 NAME= rpmbuild-order
 VERSION := $(shell sed -ne 's/^[Vv]ersion:[[:space:]]*//p' $(NAME).cabal)
 
-$(NAME).1: Main.hs rpmbuild-order.cabal
-	LANG=C help2man -N dist/build/$(NAME)/$(NAME) > $@
+$(NAME).1: src/Main.hs rpmbuild-order.cabal
+	LANG=C help2man -N ~/github/rpmbuild-order/dist-newstyle/build/x86_64-linux/ghc-$(shell ghc --numeric-version)/rpmbuild-order-$(VERSION)/x/rpmbuild-order/build/$(NAME)/$(NAME) > $@
 
 copy:
 	cp -p dist/$(NAME)-$(VERSION).tar.gz ~/fedora/haskell/hackage/$(NAME)/
