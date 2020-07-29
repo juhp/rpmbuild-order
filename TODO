@@ -10,3 +10,5 @@
 - warn about uninstalled macros packages
 
 - handle duplicate packages?
+
+- (r)deps: optimize using actual deps
