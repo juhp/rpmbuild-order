@@ -1,9 +1,6 @@
 - try topograph
 
 - better graph output
-- Tests!!
-  - testcase for circular deps: eg
-    hspec -> hspec-core -> tf-random -> primitive -> base-orphans(tests) -> hspec
 
 - use Set?
 

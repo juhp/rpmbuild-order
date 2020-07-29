@@ -36,7 +36,9 @@ import Control.Monad (guard, when, unless)
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import Data.List.Extra (dropSuffix, find)
 import System.Directory (doesDirectoryExist, doesFileExist,
-#if !MIN_VERSION_directory(1,2,5)
+#if MIN_VERSION_directory(1,2,5)
+                         listDirectory
+#else
                          getDirectoryContents
 #endif
                         )
@@ -128,14 +130,21 @@ createGraph' verbose lenient rev mdir paths = do
             if dirp
               then do
               let dir = maybe path (path </>) mdir
-                  pkg = takeFileName $ dropSuffix "/" path
-              mspec <- checkFile True $ dir </> pkg ++ ".spec"
+                  dirname = takeFileName $ dropSuffix "/" path
+              mspec <- checkFile True $ dir </> dirname ++ ".spec"
               case mspec of
+                Just spec -> return $ Just spec
                 Nothing -> do
                   dead <- doesFileExist $ dir </> "dead.package"
-                  return $ if dead || lenient then Nothing
-                           else error $ "No spec file found in " ++ path
-                Just spec -> return $ Just spec
+                  if dead then return Nothing
+                    else do
+                    specs <- filesWithExtension dir ".spec"
+                    case specs of
+                      [spec] -> return $ Just spec
+                      _ -> if lenient then return Nothing
+                           else error $ if null specs
+                                        then "No spec file found in " ++ path
+                                        else "More than one .spec file found in " ++ dir
               else error $ "No spec file found for " ++ path
           where
             checkFile :: Bool -> FilePath -> IO (Maybe FilePath)
@@ -146,6 +155,11 @@ createGraph' verbose lenient rev mdir paths = do
                 else return $ if may
                               then Nothing
                               else error $ f ++ " not found"
+
+            filesWithExtension :: FilePath -> String -> IO [FilePath]
+            filesWithExtension dir ext =
+              map (dir </>) . filter (\ f -> takeExtension f == ext) <$>
+              listDirectory dir
 
         extractMetadata :: FilePath -> ([String],[String]) -> [String] -> ([String],[String])
         extractMetadata _ acc [] = acc

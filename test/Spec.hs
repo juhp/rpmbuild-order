@@ -1,9 +1,12 @@
 import Test.Hspec
+import Control.Monad.Extra
+import Data.Foldable (for_)
 --import Distribution.RPM.Build.Graph
 import Distribution.RPM.Build.Order
+import System.Posix.Files
 
 main :: IO ()
-main = hspec spec
+main = setupSymlinks >> hspec spec
 
 pkg :: FilePath -> FilePath
 pkg = ("test/pkgs/" ++)
@@ -15,13 +18,25 @@ spec = do
       dependencySort [pkg "A", pkg "B"] >>=
       (`shouldBe` [pkg "B", pkg "A"])
 
+    it "sort 1 2" $
+      dependencySort [pkg "1", pkg "2"] >>=
+      (`shouldBe` [pkg "2", pkg "1"])
+
     it "sort A/ B/" $
       dependencySort [pkg "A/", pkg "B/"] >>=
       (`shouldBe` [pkg "B/", pkg "A/"])
 
+    it "sort 1/ 2/" $
+      dependencySort [pkg "1/", pkg "2/"] >>=
+      (`shouldBe` [pkg "2/", pkg "1/"])
+
     it "sort A.spec B.spec" $
       dependencySort [pkg "A/A.spec", pkg "B/B.spec"] >>=
       (`shouldBe` [pkg "B/B.spec", pkg "A/A.spec"])
+
+    it "sort 1.spec 2.spec" $
+      dependencySort [pkg "1/A.spec", pkg "2/B.spec"] >>=
+      (`shouldBe` [pkg "2/B.spec", pkg "1/A.spec"])
 
     it "sort A/ B.spec" $
       dependencySort [pkg "A/", pkg "B/B.spec"] >>=
@@ -44,3 +59,9 @@ spec = do
     it "leaves A B D" $
       leafPackages [pkg "A", pkg "B", pkg "D1.0"] >>=
       (`shouldBe` [pkg "A", pkg "D1.0"])
+
+setupSymlinks :: IO ()
+setupSymlinks = do
+  for_ [("1","A"),("2","B")] $ \ (l,f) ->
+    unlessM (fileExist $ pkg l) $
+    createSymbolicLink f (pkg l)

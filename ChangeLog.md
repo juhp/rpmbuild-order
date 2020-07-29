@@ -1,3 +1,6 @@
+# 0.4.0.1 (2020-07-30)
+- no longer assume pkg dir = pkg name (though still optimized for)
+
 # 0.4.0 (2020-07-29)
 - performance: rework just to use String and only parse spec files once
   and also use faster PatriciaTree.Gr

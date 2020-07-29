@@ -1,2 +1,4 @@
 /dist/
 /.stack-work/
+/test/pkgs/1
+/test/pkgs/2
