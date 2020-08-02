@@ -26,6 +26,7 @@ module Distribution.RPM.Build.Graph
 
 import qualified Data.CaseInsensitive as CI
 import Data.Graph.Inductive.Query.DFS (scc, xdfsWith)
+import Data.Graph.Inductive.Query.SP (sp)
 import Data.Graph.Inductive.PatriciaTree (Gr)
 import qualified Data.Graph.Inductive.Graph as G
 
@@ -34,7 +35,7 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad (guard, when, unless)
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
-import Data.List.Extra (dropSuffix, find)
+import Data.List.Extra (dropSuffix, find, nubOrdOn, sort, sortOn)
 import System.Directory (doesDirectoryExist, doesFileExist,
 #if MIN_VERSION_directory(1,2,5)
                          listDirectory
@@ -194,16 +195,29 @@ createGraph' verbose lenient rev mdir paths = do
 
     checkForCycles :: Monad m => PackageGraph -> m ()
     checkForCycles graph =
-       case getCycles graph of
-          [] -> return ()
-          cycles ->
-            error $ unlines $
-            "Cycles in dependencies:" :
-            map (unwords . nodeLabels graph) cycles
+      unless (null cycles) $
+        error $ unlines $
+        "Cycles in dependencies:" :
+        concatMap (renderCycles . subcycles) cycles
       where
-        getCycles :: Gr a b -> [[G.Node]]
-        getCycles =
-           filter ((>= 2) . length) . scc
+        cycles :: [[G.Node]]
+        cycles =
+           (filter ((>= 2) . length) . scc) graph
+
+        -- shortest subcycle
+        subcycles :: [G.Node] -> ([FilePath],[[FilePath]])
+        subcycles [] = error "cyclic graph with no nodes!"
+        subcycles cycle'@(n:ns) =
+          let sg = G.emap (const (1 :: Int)) $ G.subgraph cycle' graph
+              shorter = nubOrdOn sort $ sortOn length $ filter ((< length ns) . length) $ catMaybes $ mapAdjacent (\ i j-> sp j i sg) (cycle' ++ [n])
+          in (nodeLabels graph cycle', map (nodeLabels sg) shorter)
+
+        mapAdjacent :: (a -> a -> b) -> [a] -> [b]
+        mapAdjacent f xs = zipWith f xs (tail xs)
+
+        renderCycles :: ([FilePath],[[FilePath]]) -> [String]
+        renderCycles (c,sc) =
+          [unwords c] ++ if null sc then [] else ["Subcycles: "] ++ map unwords sc
 
     getDepsSrcResolved :: [(FilePath,[String],[String])] -> FilePath -> Maybe [FilePath]
     getDepsSrcResolved metadata pkg =
