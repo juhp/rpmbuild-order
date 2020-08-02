@@ -113,7 +113,7 @@ createGraph' verbose lenient rev mdir paths = do
       case mspec of
         Nothing -> return Nothing
         Just spec -> do
-          when verbose $ hPutStrLn stderr spec
+          when verbose $ warn spec
           mcontent <- rpmspecParse spec
           case mcontent of
             Nothing -> return Nothing
@@ -243,10 +243,13 @@ createGraph' verbose lenient rev mdir paths = do
     rpmspecParse :: FilePath -> IO (Maybe String)
     rpmspecParse spec = do
       (res, out, err) <- readProcessWithExitCode "rpmspec" ["-P", "--define", "ghc_version any", spec] ""
-      unless (null err) $ hPutStrLn stderr err
+      unless (null err) $ warn err
       case res of
         ExitFailure _ -> if lenient then return Nothing else exitFailure
         ExitSuccess -> return $ Just out
+
+    warn :: String -> IO ()
+    warn = hPutStrLn stderr
 
 -- | A flipped version of subgraph
 subgraph' :: Gr a b -> [G.Node] -> Gr a b
