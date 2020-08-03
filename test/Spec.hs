@@ -1,6 +1,5 @@
 import Test.Hspec
 import Control.Monad.Extra
-import Data.Foldable (for_)
 --import Distribution.RPM.Build.Graph
 import Distribution.RPM.Build.Order
 import System.Posix.Files
@@ -62,6 +61,6 @@ spec = do
 
 setupSymlinks :: IO ()
 setupSymlinks = do
-  for_ [("1","A"),("2","B")] $ \ (l,f) ->
+  forM_ [("1","A"),("2","B")] $ \ (l,f) ->
     unlessM (fileExist $ pkg l) $
     createSymbolicLink f (pkg l)
