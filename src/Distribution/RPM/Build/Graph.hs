@@ -217,7 +217,7 @@ createGraph' verbose lenient rev mdir paths = do
 
         renderCycles :: ([FilePath],[[FilePath]]) -> [String]
         renderCycles (c,sc) =
-          unwords c : if null sc then [] else ["Subcycles: "] ++ map unwords sc
+          unwords c : if null sc then [] else "Subcycles: " : map unwords sc
 
     getDepsSrcResolved :: [(FilePath,[String],[String])] -> FilePath -> Maybe [FilePath]
     getDepsSrcResolved metadata pkg =
