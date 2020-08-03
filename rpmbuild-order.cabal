@@ -71,7 +71,7 @@ Library
                  case-insensitive,
                  containers,
                  directory,
-                 extra,
+                 extra >= 1.6.4,
                  filepath,
                  fgl,
                  process
