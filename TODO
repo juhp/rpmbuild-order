@@ -4,7 +4,7 @@
 
 - use Set?
 
-- warn about uninstalled macros packages
+* warn about uninstalled (specific?) macros packages
 
 - handle duplicate packages?
 
