@@ -2,7 +2,8 @@ Name:             rpmbuild-order
 Version:          0.4.1.1
 License:          BSD3
 License-File:     LICENSE
-Author:           Henning Thielemann <haskell@henning-thielemann.de>
+Author:           Henning Thielemann <haskell@henning-thielemann.de>,
+                  Jens Petersen <petersen@redhat.com>
 Maintainer:       Jens Petersen <petersen@redhat.com>
 Copyright:        2010-2018  Henning Thielemann,
                   2018-2020 Jens Petersen <petersen@redhat.com>
