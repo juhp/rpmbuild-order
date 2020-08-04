@@ -14,6 +14,7 @@ graph <- 'createGraph' ["pkg1", "pkg2", "../pkg3"]
 module Distribution.RPM.Build.Graph
   (createGraph,
    createGraph',
+   createGraph'',
    dependencyNodes,
    subgraph',
    packageLayers,
@@ -92,13 +93,32 @@ createGraph = createGraph' False False True Nothing
 -- For the (createGraph default) reverse deps graph the arrows point back
 -- from the dependencies to the dependendent (parent/consumer) packages,
 -- and this allows forward sorting by dependencies (ie lowest deps first).
+--
+-- This is the same as @createGraph'' verbose lenient rev [] mdir paths@
 createGraph' :: Bool -- ^ verbose
              -> Bool -- ^ lenient (skip rpmspec failures)
              -> Bool -- ^ reverse dependency graph
              -> Maybe FilePath -- ^ look for spec file in a subdirectory
              -> [FilePath] -- ^ package paths (directories or spec filepaths)
              -> IO PackageGraph -- ^ dependency graph labelled by package paths
-createGraph' verbose lenient rev mdir paths = do
+createGraph' verbose lenient rev =
+  createGraph'' verbose lenient rev []
+
+-- | Create a directed dependency graph for a set of packages
+-- For the (createGraph default) reverse deps graph the arrows point back
+-- from the dependencies to the dependendent (parent/consumer) packages,
+-- and this allows forward sorting by dependencies (ie lowest deps first).
+--
+-- Additionally this function allows passing options to rpmspec:
+-- eg `--with bootstrap` etc
+createGraph'' :: Bool -- ^ verbose
+              -> Bool -- ^ lenient (skip rpmspec failures)
+              -> Bool -- ^ reverse dependency graph
+              -> [String] -- ^ rpmspec options
+              -> Maybe FilePath -- ^ look for spec file in a subdirectory
+              -> [FilePath] -- ^ package paths (directories or spec filepaths)
+              -> IO PackageGraph -- ^ dependency graph labelled by package paths
+createGraph'' verbose lenient rev rpmopts mdir paths = do
   metadata <- catMaybes <$> mapM readSpecMetadata paths
   let realpkgs = map fst3 metadata
       deps = mapMaybe (getDepsSrcResolved metadata) realpkgs
@@ -242,7 +262,7 @@ createGraph' verbose lenient rev mdir paths = do
 
     rpmspecParse :: FilePath -> IO (Maybe String)
     rpmspecParse spec = do
-      (res, out, err) <- readProcessWithExitCode "rpmspec" ["-P", "--define", "ghc_version any", spec] ""
+      (res, out, err) <- readProcessWithExitCode "rpmspec" (["-P", "--define", "ghc_version any"] ++ rpmopts ++ [spec]) ""
       unless (null err) $ warn err
       case res of
         ExitFailure _ -> if lenient then return Nothing else exitFailure
