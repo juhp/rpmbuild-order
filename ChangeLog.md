@@ -1,3 +1,8 @@
+# 0.4.1.1 (2020-08-04)
+- add a newline between cycles
+- support options for rpmspec (suggested by QuLogic)
+  eg `rpmbuild-order sort --rpmopt --with=bootstrap ...`
+
 # 0.4.1 (2020-08-03)
 - no longer assume pkg dir = pkg name (though still optimize for it)
 - output any subcycles for cyclic graph (suggested by QuLogic)
