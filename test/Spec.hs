@@ -49,6 +49,10 @@ spec = do
       dependencySort [pkg "A", pkg "B/", pkg "D1.0"] >>=
       (`shouldBe` [pkg "B/", pkg "D1.0", pkg "A"])
 
+    it "circular A B C boot" $
+      dependencySortRpmOpts ["--with=boot"] [pkg "A", pkg "B", pkg "C"] >>=
+      (`shouldBe` [pkg "C", pkg "B", pkg "A"])
+
   describe "layers" $
     it "layers A B" $
       dependencyLayers [pkg "A", pkg "B"] >>=

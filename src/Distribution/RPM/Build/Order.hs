@@ -17,6 +17,7 @@ Package paths can be directories or spec files.
 
 module Distribution.RPM.Build.Order
   (dependencySort,
+   dependencySortRpmOpts,
    dependencySortParallel,
    dependencyLayers,
    leafPackages,
@@ -34,8 +35,12 @@ import Distribution.RPM.Build.Graph
 
 -- | sort packages by dependencies
 dependencySort :: [FilePath] -> IO [FilePath]
-dependencySort pkgs = do
-  topsort' <$> createGraph pkgs
+dependencySort = dependencySortRpmOpts []
+
+-- | sort packages by dependencies with rpm options
+dependencySortRpmOpts :: [String] -> [FilePath] -> IO [FilePath]
+dependencySortRpmOpts rpmopts pkgs = do
+  topsort' <$> createGraphRpmOpts rpmopts pkgs
 
 -- | dependency sort of packages in graph components
 dependencySortParallel :: [FilePath] -> IO [[FilePath]]

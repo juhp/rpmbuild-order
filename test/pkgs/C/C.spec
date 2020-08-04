@@ -1,9 +1,13 @@
+%bcond_with boot
+
 Name:           C
 Version:        1
 Release:        1%{?dist}
 Summary:        package C
 License:        GPL
+%if %{without boot}
 BuildRequires:  C-A
+%endif
 
 %description
 Circular dep

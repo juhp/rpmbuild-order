@@ -13,6 +13,7 @@ graph <- 'createGraph' ["pkg1", "pkg2", "../pkg3"]
 
 module Distribution.RPM.Build.Graph
   (createGraph,
+   createGraphRpmOpts,
    createGraph',
    createGraph'',
    dependencyNodes,
@@ -88,6 +89,14 @@ dependencyNodes subset graph =
 createGraph :: [FilePath] -- ^ package paths (directories or spec filepaths)
             -> IO PackageGraph -- ^ dependency graph labelled by package paths
 createGraph = createGraph' False False True Nothing
+
+-- | Create a directed dependency graph for a set of packages setting rpm options
+-- This is a convenience wrapper for @createGraph'' rpmopts False False True Nothing@
+createGraphRpmOpts :: [String] -- ^ rpmspec options
+                   -> [FilePath] -- ^ package paths (directories or spec filepaths)
+                   -> IO PackageGraph -- ^ dependency graph labelled by package paths
+createGraphRpmOpts rpmopts =
+  createGraph'' rpmopts False False True Nothing
 
 -- | Create a directed dependency graph for a set of packages
 -- For the (createGraph default) reverse deps graph the arrows point back
