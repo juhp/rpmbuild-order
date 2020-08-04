@@ -1,4 +1,4 @@
-# 0.4.1.1 (2020-08-04)
+# 0.4.2 (2020-08-04)
 - add a newline between cycles
 - support options for rpmspec (suggested by QuLogic)
   eg `rpmbuild-order sort --rpmopt --with=bootstrap ...`

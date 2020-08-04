@@ -37,19 +37,19 @@ main =
   "Sort package sources (spec files) in build dependency order" $
   subcommands
   [ Subcommand "sort" "sort packages" $
-    sortPackages <$> verboseOpt <*> lenientOpt <*> rpmOpts <*> componentsOpt <*> subdirOpt <*> pkgArgs
+    sortPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> componentsOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "deps" "sort dependencies" $
-    depsPackages False <$> verboseOpt <*> lenientOpt <*> rpmOpts <*> combineOpt <*> subdirOpt <*> pkgArgs
+    depsPackages False <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "rdeps" "sort dependents" $
-    depsPackages True <$> verboseOpt <*> lenientOpt <*> rpmOpts <*> combineOpt <*> subdirOpt <*> pkgArgs
+    depsPackages True <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "layers" "ordered output suitable for a chain-build" $
-    layerPackages <$> verboseOpt <*> lenientOpt <*> rpmOpts <*> combineOpt <*> subdirOpt <*> pkgArgs
+    layerPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "chain" "ordered output suitable for a chain-build" $
-    chainPackages <$> verboseOpt <*> lenientOpt <*> rpmOpts <*> combineOpt <*> subdirOpt <*> pkgArgs
+    chainPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "leaves" "List of the top leaves of package graph" $
-    leavesPackages <$> verboseOpt <*> lenientOpt <*> rpmOpts <*> subdirOpt <*> pkgArgs
+    leavesPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "roots" "List lowest root packages" $
-    rootPackages <$> verboseOpt <*> lenientOpt <*> rpmOpts <*> subdirOpt <*> pkgArgs
+    rootPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
   ]
   where
     verboseOpt = switchWith 'v' "verbose" "Verbose output for debugging"
@@ -63,18 +63,18 @@ main =
       flagWith Parallel Combine 'c' "combine" "Combine connected and independent packages"
     rpmOpts = many (strOptionWith 'r' "rpmopt" "RPMOPT" "Option for rpmspec")
 
-sortPackages :: Bool -> Bool -> [String] -> Components -> Maybe FilePath -> [FilePath] -> IO ()
+sortPackages :: [String] -> Bool -> Bool -> Components -> Maybe FilePath -> [FilePath] -> IO ()
 sortPackages verbose lenient rpmopts opts mdir pkgs = do
   createGraph'' verbose lenient True rpmopts mdir pkgs >>= sortGraph opts
 
-depsPackages :: Bool -> Bool -> Bool -> [String] -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
-depsPackages rev verbose lenient rpmopts parallel mdir pkgs = do
+depsPackages :: Bool -> [String] ->Bool -> Bool ->  Bool -> Maybe FilePath -> [FilePath] -> IO ()
+depsPackages rev rpmopts verbose lenient parallel mdir pkgs = do
   unlessM (and <$> mapM doesDirectoryExist pkgs) $
     error "Please use package directory paths"
   listDirectory "." >>=
     -- filter out dotfiles
-    createGraph'' verbose lenient (not rev) rpmopts mdir . filter ((/= '.') . head) >>=
-    createGraph'' verbose lenient True rpmopts mdir . dependencyNodes pkgs >>=
+    createGraph'' rpmopts verbose lenient (not rev) mdir . filter ((/= '.') . head) >>=
+    createGraph'' rpmopts verbose lenient True mdir . dependencyNodes pkgs >>=
     sortGraph (if parallel then Parallel else Combine)
 
 #if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,5))
@@ -85,17 +85,17 @@ listDirectory path =
   where f filename = filename /= "." && filename /= ".."
 #endif
 
-layerPackages :: Bool -> Bool -> [String] -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
-layerPackages verbose lenient rpmopts combine mdir pkgs = do
-  graph <- createGraph'' verbose lenient True rpmopts mdir pkgs
+layerPackages :: [String] -> Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
+layerPackages rpmopts verbose lenient combine mdir pkgs = do
+  graph <- createGraph'' rpmopts verbose lenient True mdir pkgs
   if combine then printLayers graph
     else mapM_ (printLayers . subgraph' graph) (components graph)
   where
     printLayers =  putStrLn . unlines . map unwords . packageLayers
 
-chainPackages :: Bool -> Bool -> [String] -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
-chainPackages verbose lenient rpmopts combine mdir pkgs = do
-  graph <- createGraph'' verbose lenient True rpmopts mdir pkgs
+chainPackages :: [String] -> Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
+chainPackages rpmopts verbose lenient combine mdir pkgs = do
+  graph <- createGraph'' rpmopts verbose lenient True mdir pkgs
   if combine then doChain graph
     else mapM_ (doChain . subgraph' graph) (components graph)
   where
@@ -103,12 +103,12 @@ chainPackages verbose lenient rpmopts combine mdir pkgs = do
       let chain = intercalate [":"] $ packageLayers graph
       in putStrLn $ unwords chain
 
-leavesPackages :: Bool -> Bool -> [String] -> Maybe FilePath -> [FilePath] -> IO ()
-leavesPackages verbose lenient rpmopts mdir pkgs = do
-  graph <- createGraph'' verbose lenient True rpmopts mdir pkgs
+leavesPackages :: [String] -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
+leavesPackages rpmopts verbose lenient mdir pkgs = do
+  graph <- createGraph'' rpmopts verbose lenient True mdir pkgs
   mapM_ putStrLn $ packageLeaves graph
 
-rootPackages :: Bool -> Bool -> [String] -> Maybe FilePath -> [FilePath] -> IO ()
-rootPackages verbose lenient rpmopts mdir pkgs = do
-  graph <- createGraph'' verbose lenient True rpmopts mdir pkgs
+rootPackages :: [String] -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
+rootPackages rpmopts verbose lenient mdir pkgs = do
+  graph <- createGraph'' rpmopts verbose lenient True mdir pkgs
   mapM_ putStrLn $ lowestLayer graph

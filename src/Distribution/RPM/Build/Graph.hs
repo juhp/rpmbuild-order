@@ -94,15 +94,14 @@ createGraph = createGraph' False False True Nothing
 -- from the dependencies to the dependendent (parent/consumer) packages,
 -- and this allows forward sorting by dependencies (ie lowest deps first).
 --
--- This is the same as @createGraph'' verbose lenient rev [] mdir paths@
+-- This is the same as @createGraph'' []@
 createGraph' :: Bool -- ^ verbose
              -> Bool -- ^ lenient (skip rpmspec failures)
              -> Bool -- ^ reverse dependency graph
              -> Maybe FilePath -- ^ look for spec file in a subdirectory
              -> [FilePath] -- ^ package paths (directories or spec filepaths)
              -> IO PackageGraph -- ^ dependency graph labelled by package paths
-createGraph' verbose lenient rev =
-  createGraph'' verbose lenient rev []
+createGraph' = createGraph'' []
 
 -- | Create a directed dependency graph for a set of packages
 -- For the (createGraph default) reverse deps graph the arrows point back
@@ -111,14 +110,16 @@ createGraph' verbose lenient rev =
 --
 -- Additionally this function allows passing options to rpmspec:
 -- eg `--with bootstrap` etc
-createGraph'' :: Bool -- ^ verbose
+--
+-- @since 0.4.2
+createGraph'' :: [String] -- ^ rpmspec options
+              -> Bool -- ^ verbose
               -> Bool -- ^ lenient (skip rpmspec failures)
               -> Bool -- ^ reverse dependency graph
-              -> [String] -- ^ rpmspec options
               -> Maybe FilePath -- ^ look for spec file in a subdirectory
               -> [FilePath] -- ^ package paths (directories or spec filepaths)
               -> IO PackageGraph -- ^ dependency graph labelled by package paths
-createGraph'' verbose lenient rev rpmopts mdir paths = do
+createGraph'' rpmopts verbose lenient rev mdir paths = do
   metadata <- catMaybes <$> mapM readSpecMetadata paths
   let realpkgs = map fst3 metadata
       deps = mapMaybe (getDepsSrcResolved metadata) realpkgs
