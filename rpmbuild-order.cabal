@@ -19,7 +19,8 @@ Description:
   It can also output the ordered dependencies or reverse depends
   for one or more packages, provided all the packages are checked out
   in neighboring directories. This is also useful to see what packages
-  are affected when a low-level package changes.
+  are affected when a low-level package changes. It also have support
+  for setting RPM options for bcond etc, which can affect dependencies.
 
   Since version 0.4 there is a library too.
 Tested-with:       GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,

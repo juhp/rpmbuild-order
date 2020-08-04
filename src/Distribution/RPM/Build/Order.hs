@@ -38,6 +38,8 @@ dependencySort :: [FilePath] -> IO [FilePath]
 dependencySort = dependencySortRpmOpts []
 
 -- | sort packages by dependencies with rpm options
+--
+-- @since 0.4.2
 dependencySortRpmOpts :: [String] -> [FilePath] -> IO [FilePath]
 dependencySortRpmOpts rpmopts pkgs = do
   topsort' <$> createGraphRpmOpts rpmopts pkgs

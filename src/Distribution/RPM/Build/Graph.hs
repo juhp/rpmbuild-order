@@ -12,7 +12,8 @@ graph <- 'createGraph' ["pkg1", "pkg2", "../pkg3"]
 -}
 
 module Distribution.RPM.Build.Graph
-  (createGraph,
+  (PackageGraph,
+   createGraph,
    createGraphRpmOpts,
    createGraph',
    createGraph'',
@@ -22,8 +23,7 @@ module Distribution.RPM.Build.Graph
    lowestLayer,
    lowestLayer',
    packageLeaves,
-   separatePackages,
-   PackageGraph
+   separatePackages
   ) where
 
 import qualified Data.CaseInsensitive as CI
@@ -92,6 +92,8 @@ createGraph = createGraph' False False True Nothing
 
 -- | Create a directed dependency graph for a set of packages setting rpm options
 -- This is a convenience wrapper for @createGraph'' rpmopts False False True Nothing@
+--
+-- @since 0.4.2
 createGraphRpmOpts :: [String] -- ^ rpmspec options
                    -> [FilePath] -- ^ package paths (directories or spec filepaths)
                    -> IO PackageGraph -- ^ dependency graph labelled by package paths

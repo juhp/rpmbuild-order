@@ -21,8 +21,16 @@ Using the rpmbuild-order `deps` and `rdeps` commands the ordered
 dependencies and reverse dependencies of a package can be obtained
 from the current set of checked out package sources.
 
+## Library
 As of version 0.4, a library is also provided.
-See the modules' documentation for details.
+
+There are two modules:
+
+- `Distribution.RPM.Build.Graph` provides lower level functions for generating
+  RPM dependency graphs
+- `Distribution.RPM.Build.Order` provides higher level functions for sort packages in build dependency orders and output.
+
+Please see the documentation for more details.
 
 ## Notes and known problems
 1. Given packages A, B, C, where C depends on B, and B depends on A,
@@ -44,4 +52,4 @@ This may get addressed some day, but file dependencies seem less common for
 BuildRequires than Requires.
 
 3. rpmspec is used to parse spec files (for macro expansion etc):
-so missing macros packages may lead to erroneous results.
+so missing macros packages can lead to erroneous results in some cases.
