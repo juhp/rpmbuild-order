@@ -218,7 +218,7 @@ createGraph'' verbose lenient rev rpmopts mdir paths = do
       unless (null cycles) $
         error $ unlines $
         "Cycles in dependencies:" :
-        concatMap (renderCycles . subcycles) cycles
+        concatMap ((++ [""]) . renderCycles . subcycles) cycles
       where
         cycles :: [[G.Node]]
         cycles =
