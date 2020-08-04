@@ -28,7 +28,8 @@ There are two modules:
 
 - `Distribution.RPM.Build.Graph` provides lower level functions for generating
   RPM dependency graphs
-- `Distribution.RPM.Build.Order` provides higher level functions for sort packages in build dependency orders and output.
+- `Distribution.RPM.Build.Order` provides higher level functions for
+  sorting packages in build dependency orders and output.
 
 Please see the documentation for more details.
 
