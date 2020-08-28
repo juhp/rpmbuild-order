@@ -64,7 +64,7 @@ spec = do
       (`shouldBe` [pkg "A", pkg "D1.0"])
 
 setupSymlinks :: IO ()
-setupSymlinks = do
+setupSymlinks =
   forM_ [("1","A"),("2","B")] $ \ (l,f) ->
     unlessM (fileExist $ pkg l) $
     createSymbolicLink f (pkg l)

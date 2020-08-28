@@ -76,7 +76,7 @@ data Components = Parallel -- ^ separate independent stacks
 
 -- | output sorted packages from a PackageGraph arrange by Components
 sortGraph :: Components -> PackageGraph -> IO ()
-sortGraph opt graph = do
+sortGraph opt graph =
   case opt of
     Parallel ->
       mapM_ ((putStrLn . ('\n':) . unwords) . topsort' . subgraph' graph) (components graph)
