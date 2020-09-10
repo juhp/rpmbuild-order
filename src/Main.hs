@@ -64,8 +64,8 @@ main =
     rpmOpts = many (strOptionWith 'r' "rpmopt" "RPMOPT" "Option for rpmspec")
 
 sortPackages :: [String] -> Bool -> Bool -> Components -> Maybe FilePath -> [FilePath] -> IO ()
-sortPackages verbose lenient rpmopts opts mdir pkgs = do
-  createGraph'' verbose lenient True rpmopts mdir pkgs >>= sortGraph opts
+sortPackages rpmopts verbose lenient opts mdir pkgs = do
+  createGraph'' rpmopts verbose lenient True mdir pkgs >>= sortGraph opts
 
 depsPackages :: Bool -> [String] ->Bool -> Bool ->  Bool -> Maybe FilePath -> [FilePath] -> IO ()
 depsPackages rev rpmopts verbose lenient parallel mdir pkgs = do
