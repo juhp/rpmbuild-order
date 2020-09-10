@@ -1,3 +1,8 @@
+# 0.4.2.1 (2020-09-10)
+- 'sort': fix arg handled which was causing reverse ordering!
+- add a sort test for the installed rpmbuild-order
+- drop the erroneous dependency on Cabal
+
 # 0.4.2 (2020-08-04)
 - support options for rpmspec (suggested by QuLogic)
   eg `rpmbuild-order sort --rpmopt --with=bootstrap ...`

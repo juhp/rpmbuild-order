@@ -8,9 +8,9 @@ This package originally based on code from [cabal-sort](http://hackage.haskell.o
 
     $ rpmbuild-order --help
     $ rpmbuild-order sort mycore mylib myapp
-    mylib
-    mycore
-    myapp
+
+    mylib mycore myapp
+    $
 
 The arguments passed can either be directories containing the package, or spec files.
 
