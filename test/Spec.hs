@@ -2,6 +2,7 @@ import Test.Hspec
 import Control.Monad.Extra
 --import Distribution.RPM.Build.Graph
 import Distribution.RPM.Build.Order
+import SimpleCmd
 import System.Posix.Files
 
 main :: IO ()
@@ -62,6 +63,12 @@ spec = do
     it "leaves A B D" $
       leafPackages [pkg "A", pkg "B", pkg "D1.0"] >>=
       (`shouldBe` [pkg "A", pkg "D1.0"])
+
+  -- NB hack: this requires it to be "cabal install"'ed already
+  describe "rpmbuild-order" $ do
+    it "sort A B" $
+      cmd "rpmbuild-order" ["sort", pkg "A", pkg "B"] >>=
+      (`shouldBe` unwords ["\n" ++ pkg "B", pkg "A"])
 
 setupSymlinks :: IO ()
 setupSymlinks =
