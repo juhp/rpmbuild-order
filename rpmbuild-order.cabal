@@ -29,7 +29,8 @@ Tested-with:       GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,
                    GHC == 8.10.2
 Cabal-Version:     >=1.10
 Build-Type:        Simple
-Extra-source-files: README.md TODO ChangeLog.md rpmbuild-order.1
+Extra-doc-files:    README.md TODO ChangeLog.md
+Extra-source-files: rpmbuild-order.1
                     test/pkgs/A/A.spec
                     test/pkgs/B/B.spec
                     test/pkgs/C/C.spec
