@@ -13,7 +13,7 @@ import Control.Applicative (
                            )
 import Control.Monad.Extra
 import Data.Graph.Inductive.Query.DFS (components)
-import Data.List
+import Data.List (intercalate)
 
 #if !MIN_VERSION_simple_cmd_args(0,1,4)
 import Options.Applicative (str)
