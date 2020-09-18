@@ -39,9 +39,9 @@ main =
   [ Subcommand "sort" "sort packages" $
     sortPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> componentsOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "deps" "sort dependencies" $
-    depsPackages False <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
+    depsPackages False <$> rpmOpts <*> verboseOpt <*> ignoredBRopts <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "rdeps" "sort dependents" $
-    depsPackages True <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
+    depsPackages True <$> rpmOpts <*> verboseOpt <*> ignoredBRopts <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "layers" "ordered output suitable for a chain-build" $
     layerPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "chain" "ordered output suitable for a chain-build" $
@@ -62,18 +62,19 @@ main =
       flagWith' Separate 'i' "independent" "Only list independent packages" <|>
       flagWith Parallel Combine 'c' "combine" "Combine connected and independent packages"
     rpmOpts = many (strOptionWith 'r' "rpmopt" "RPMOPT" "Option for rpmspec")
+    ignoredBRopts = many (strOptionWith 'I' "ignore-BR" "PKG" "BuildRequires to exclude from graph")
 
 sortPackages :: [String] -> Bool -> Bool -> Components -> Maybe FilePath -> [FilePath] -> IO ()
 sortPackages rpmopts verbose lenient opts mdir pkgs = do
   createGraph'' rpmopts verbose lenient True mdir pkgs >>= sortGraph opts
 
-depsPackages :: Bool -> [String] ->Bool -> Bool ->  Bool -> Maybe FilePath -> [FilePath] -> IO ()
-depsPackages rev rpmopts verbose lenient parallel mdir pkgs = do
+depsPackages :: Bool -> [String] -> Bool-> [String]  -> Bool ->  Bool -> Maybe FilePath -> [FilePath] -> IO ()
+depsPackages rev rpmopts verbose ignoredBRs lenient parallel mdir pkgs = do
   unlessM (and <$> mapM doesDirectoryExist pkgs) $
     error "Please use package directory paths"
   listDirectory "." >>=
     -- filter out dotfiles
-    createGraph'' rpmopts verbose lenient (not rev) mdir . filter ((/= '.') . head) >>=
+    createGraph''' ignoredBRs rpmopts verbose lenient (not rev) mdir . filter ((/= '.') . head) >>=
     createGraph'' rpmopts verbose lenient True mdir . dependencyNodes pkgs >>=
     sortGraph (if parallel then Parallel else Combine)
 

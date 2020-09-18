@@ -17,6 +17,7 @@ module Distribution.RPM.Build.Graph
    createGraphRpmOpts,
    createGraph',
    createGraph'',
+   createGraph''',
    dependencyNodes,
    subgraph',
    packageLayers,
@@ -130,7 +131,22 @@ createGraph'' :: [String] -- ^ rpmspec options
               -> Maybe FilePath -- ^ look for spec file in a subdirectory
               -> [FilePath] -- ^ package paths (directories or spec filepaths)
               -> IO PackageGraph -- ^ dependency graph labelled by package paths
-createGraph'' rpmopts verbose lenient rev mdir paths = do
+createGraph'' = createGraph''' []
+
+-- | Create a directed dependency graph for a set of packages
+--
+-- Like createGraph'' but with additional parameter for any BRs to be ignored.
+--
+-- @since 0.4.3
+createGraph''' :: [String] -- ^ ignored BRs
+               -> [String] -- ^ rpmspec options
+               -> Bool -- ^ verbose
+               -> Bool -- ^ lenient (skip rpmspec failures)
+               -> Bool -- ^ reverse dependency graph
+               -> Maybe FilePath -- ^ look for spec file in a subdirectory
+               -> [FilePath] -- ^ package paths (directories or spec filepaths)
+               -> IO PackageGraph -- ^ dependency graph labelled by package paths
+createGraph''' ignoredBRs rpmopts verbose lenient rev mdir paths = do
   metadata <- catMaybes <$> mapM readSpecMetadata paths
   let realpkgs = map fst3 metadata
       deps = mapMaybe (getDepsSrcResolved metadata) realpkgs
@@ -200,7 +216,10 @@ createGraph'' rpmopts verbose lenient rev mdir paths = do
           let ws = words l in
             if length ws < 2 then extractMetadata pkg acc ls
             else case CI.mk (head ws) of
-              "BuildRequires:" -> extractMetadata pkg (provs,(head . tail) ws : brs) ls
+              "BuildRequires:" ->
+                let br = (head . tail) ws
+                    brs' = if br `elem` ignoredBRs then brs else br:brs
+                in extractMetadata pkg (provs, brs') ls
               "Name:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
               "Provides:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
               "%package" ->

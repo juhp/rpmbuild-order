@@ -1,3 +1,7 @@
+# 0.4.3
+- 'deps' and 'rdeps' can now take --ignore-BR options
+  (provided through depsPackages and new createGraph''')
+
 # 0.4.2.1 (2020-09-10)
 - 'sort': fix arg handled which was causing reverse ordering!
 - add a sort test for the installed rpmbuild-order
