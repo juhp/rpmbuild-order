@@ -2,8 +2,7 @@ NAME= rpmbuild-order
 VERSION := $(shell sed -ne 's/^[Vv]ersion:[[:space:]]*//p' $(NAME).cabal)
 
 build:
-	cabal install
-	cabal test
+	stack install --test
 	LANG=C help2man -N $(NAME) > $(NAME).1
 
 copy:
