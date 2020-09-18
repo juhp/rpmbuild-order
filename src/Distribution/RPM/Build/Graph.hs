@@ -138,7 +138,7 @@ createGraph'' = createGraph''' []
 -- Like createGraph'' but with additional parameter for any BRs to be ignored.
 --
 -- @since 0.4.3
-createGraph''' :: [String] -- ^ ignored BRs
+createGraph''' :: [String] -- ^ ignored BuildRequires
                -> [String] -- ^ rpmspec options
                -> Bool -- ^ verbose
                -> Bool -- ^ lenient (skip rpmspec failures)
