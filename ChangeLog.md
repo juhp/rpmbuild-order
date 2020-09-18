@@ -1,4 +1,4 @@
-# 0.4.3
+# 0.4.3 (2020-09-18)
 - 'deps' and 'rdeps' can now take --ignore-BR options
   (provided through depsPackages and new createGraph''')
 - 'sort' no longer outputs a leading newline

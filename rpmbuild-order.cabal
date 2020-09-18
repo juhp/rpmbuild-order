@@ -1,5 +1,5 @@
 Name:             rpmbuild-order
-Version:          0.4.2.1
+Version:          0.4.3
 License:          BSD3
 License-File:     LICENSE
 Author:           Henning Thielemann <haskell@henning-thielemann.de>,
@@ -15,14 +15,14 @@ Description:
   The rpmbuild-order tool orders RPM packages by dependencies, so that they can
   be built in the correct order. It does this by reading RPM package spec files
   and then topologically sorts them according to their dependencies.
-  The code originated from cabal-sort by Henning Thielemann.
+  The code evolved from cabal-sort by Henning Thielemann.
   It can also output the ordered dependencies or reverse depends
   for one or more packages, provided all the packages are checked out
   in neighboring directories. This is also useful to see what packages
-  are affected when a low-level package changes. It also have support
+  are affected when a low-level package changes. It also has support
   for setting RPM options for bcond etc, which can affect dependencies.
 
-  Since version 0.4 there is a library too.
+  Since version 0.4, a library API is also provided.
 Tested-with:       GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,
                    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2,
                    GHC == 8.4.4, GHC == 8.6.5, GHC == 8.8.4,
