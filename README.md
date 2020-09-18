@@ -8,7 +8,6 @@ This package originally based on code from [cabal-sort](http://hackage.haskell.o
 
     $ rpmbuild-order --help
     $ rpmbuild-order sort mycore mylib myapp
-
     mylib mycore myapp
     $
 

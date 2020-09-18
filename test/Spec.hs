@@ -68,7 +68,7 @@ spec = do
   describe "rpmbuild-order" $ do
     it "sort A B" $
       cmd "rpmbuild-order" ["sort", pkg "A", pkg "B"] >>=
-      (`shouldBe` unwords ["\n" ++ pkg "B", pkg "A"])
+      (`shouldBe` unwords [pkg "B", pkg "A"])
 
 setupSymlinks :: IO ()
 setupSymlinks =

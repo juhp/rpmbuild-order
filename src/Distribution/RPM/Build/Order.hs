@@ -29,6 +29,7 @@ where
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
+import Data.List (intercalate)
 import Data.Graph.Inductive.Query.DFS (topsort', components)
 
 import Distribution.RPM.Build.Graph
@@ -77,12 +78,12 @@ data Components = Parallel -- ^ separate independent stacks
 -- | output sorted packages from a PackageGraph arrange by Components
 sortGraph :: Components -> PackageGraph -> IO ()
 sortGraph opt graph =
+  -- FIXME output list(s) instead
+  putStrLn $
   case opt of
     Parallel ->
-      mapM_ ((putStrLn . ('\n':) . unwords) . topsort' . subgraph' graph) (components graph)
-    Combine -> (putStrLn . unwords . topsort') graph
+      intercalate "\n\n" $ map (unwords . topsort' . subgraph' graph) (components graph)
+    Combine -> (unwords . topsort') graph
     Connected ->
-      mapM_ ((putStrLn . ('\n':) . unwords) . topsort' . subgraph' graph) $ filter ((>1) . length) (components graph)
-    Separate ->
-      let independent = separatePackages graph
-      in mapM_ putStrLn independent
+      intercalate "\n\n" $ map (unwords . topsort' . subgraph' graph) $ filter ((>1) . length) (components graph)
+    Separate -> unlines $ separatePackages graph
