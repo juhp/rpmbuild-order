@@ -14,6 +14,7 @@ import Control.Applicative (
 import Control.Monad.Extra
 import Data.Graph.Inductive.Query.DFS (components)
 import Data.List (intercalate)
+import Data.List.Extra (dropSuffix)
 
 #if !MIN_VERSION_simple_cmd_args(0,1,4)
 import Options.Applicative (str)
@@ -39,9 +40,9 @@ main =
   [ Subcommand "sort" "sort packages" $
     sortPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> componentsOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "deps" "sort dependencies" $
-    depsPackages False <$> rpmOpts <*> verboseOpt <*> ignoredBRopts <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
+    depsPackages False <$> rpmOpts <*> verboseOpt <*> excludeOpts <*> ignoredBRopts <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "rdeps" "sort dependents" $
-    depsPackages True <$> rpmOpts <*> verboseOpt <*> ignoredBRopts <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
+    depsPackages True <$> rpmOpts <*> verboseOpt <*> excludeOpts <*> ignoredBRopts <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "layers" "ordered output suitable for a chain-build" $
     layerPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "chain" "ordered output suitable for a chain-build" $
@@ -63,16 +64,17 @@ main =
       flagWith Parallel Combine 'c' "combine" "Combine connected and independent packages"
     rpmOpts = many (strOptionWith 'r' "rpmopt" "RPMOPT" "Option for rpmspec")
     ignoredBRopts = many (strOptionWith 'I' "ignore-BR" "PKG" "BuildRequires to exclude from graph")
+    excludeOpts = many (dropSuffix "/" <$> strOptionWith 'x' "exclude" "PKG" "Package dirs to exclude from graph")
 
 sortPackages :: [String] -> Bool -> Bool -> Components -> Maybe FilePath -> [FilePath] -> IO ()
 sortPackages rpmopts verbose lenient opts mdir pkgs = do
   createGraph'' rpmopts verbose lenient True mdir pkgs >>= sortGraph opts
 
-depsPackages :: Bool -> [String] -> Bool-> [String]  -> Bool ->  Bool -> Maybe FilePath -> [FilePath] -> IO ()
-depsPackages rev rpmopts verbose ignoredBRs lenient parallel mdir pkgs = do
+depsPackages :: Bool -> [String] -> Bool-> [String] -> [String] -> Bool ->  Bool -> Maybe FilePath -> [FilePath] -> IO ()
+depsPackages rev rpmopts verbose excludedPkgs ignoredBRs lenient parallel mdir pkgs = do
   unlessM (and <$> mapM doesDirectoryExist pkgs) $
     error "Please use package directory paths"
-  listDirectory "." >>=
+  filter (`notElem` excludedPkgs) <$> listDirectory "." >>=
     -- filter out dotfiles
     createGraph''' ignoredBRs rpmopts verbose lenient (not rev) mdir . filter ((/= '.') . head) >>=
     createGraph'' rpmopts verbose lenient True mdir . dependencyNodes pkgs >>=

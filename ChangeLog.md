@@ -1,3 +1,6 @@
+# 0.4.3.1 (2020-09-24)
+- 'deps' and 'rdeps': --exclude option to ignore a "broken" neighboring package
+
 # 0.4.3 (2020-09-18)
 - 'deps' and 'rdeps' can now take --ignore-BR options
   (provided through depsPackages and new createGraph''')
