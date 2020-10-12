@@ -42,7 +42,6 @@ source-repository head
 
 Executable rpmbuild-order
   Build-Depends: base < 5,
-                 bytestring,
                  directory,
                  extra,
                  fgl,
