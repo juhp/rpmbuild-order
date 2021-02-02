@@ -7,3 +7,5 @@
 - handle duplicate packages?
 
 - (r)deps: optimize using actual deps
+
+- option to somehow display subpackage deps for cycles

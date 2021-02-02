@@ -1,3 +1,7 @@
+# 0.4.3.2 (2021-02-03)
+- intercalate newlines between cycles
+- only list subcycles with over 2 packages
+
 # 0.4.3.1 (2020-09-24)
 - 'deps' and 'rdeps': --exclude option to ignore a "broken" neighboring package
 
