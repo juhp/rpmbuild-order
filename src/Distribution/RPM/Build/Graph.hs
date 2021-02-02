@@ -260,7 +260,7 @@ createGraph''' ignoredBRs rpmopts verbose lenient rev mdir paths = do
         subcycles [] = error "cyclic graph with no nodes!"
         subcycles cycle'@(n:ns) =
           let sg = G.emap (const (1 :: Int)) $ G.subgraph cycle' graph
-              shorter = nubOrdOn sort $ sortOn length $ filter ((< length ns) . length) $ catMaybes $ mapAdjacent (\ i j-> sp j i sg) (cycle' ++ [n])
+              shorter = nubOrdOn sort $ sortOn length $ filter ((\l -> l < length ns && l > 2) . length) $ catMaybes $ mapAdjacent (\ i j-> sp j i sg) (cycle' ++ [n])
           in (nodeLabels graph cycle', map (nodeLabels sg) shorter)
 
         mapAdjacent :: (a -> a -> b) -> [a] -> [b]
