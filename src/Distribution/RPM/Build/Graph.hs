@@ -38,7 +38,7 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad (guard, when, unless)
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
-import Data.List.Extra (dropSuffix, find, nubOrdOn, sort, sortOn)
+import Data.List.Extra (dropSuffix, find, intercalate, nubOrdOn, sort, sortOn)
 import System.Directory (doesDirectoryExist, doesFileExist,
 #if MIN_VERSION_directory(1,2,5)
                          listDirectory
@@ -249,7 +249,7 @@ createGraph''' ignoredBRs rpmopts verbose lenient rev mdir paths = do
       unless (null cycles) $
         error $ unlines $
         "Cycles in dependencies:" :
-        concatMap ((++ [""]) . renderCycles . subcycles) cycles
+        intercalate [""] (map (renderCycles . subcycles) cycles)
       where
         cycles :: [[G.Node]]
         cycles =
