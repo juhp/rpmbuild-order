@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/juhp/rpmbuild-order.svg?branch=master)](https://travis-ci.com/juhp/rpmbuild-order)
+[![GitHub CI](https://github.com/juhp/rpmbuild-order/workflows/build/badge.svg)](https://github.com/juhp/rpmbuild-order/actions)
 [![Hackage](http://img.shields.io/hackage/v/rpmbuild-order.png)](http://hackage.haskell.org/package/rpmbuild-order)
 [![license](https://img.shields.io/badge/license-BSD-brightgreen.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
