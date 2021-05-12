@@ -1,18 +1,23 @@
 import Test.Hspec
 import Control.Monad.Extra
+import Data.Version.Extra
 --import Distribution.RPM.Build.Graph
 import Distribution.RPM.Build.Order
 import SimpleCmd
 import System.Posix.Files
 
 main :: IO ()
-main = setupSymlinks >> hspec spec
+main = do
+  setupSymlinks
+  -- rpmspec < 4.15 does not support "--with"
+  rpmver <- readVersion . last . words <$> cmd "rpmspec" ["--version"]
+  hspec (spec rpmver)
 
 pkg :: FilePath -> FilePath
 pkg = ("test/pkgs/" ++)
 
-spec :: Spec
-spec = do
+spec :: Version -> Spec
+spec rpmver = do
   describe "sorting" $ do
     it "sort A B" $
       dependencySort [pkg "A", pkg "B"] >>=
@@ -50,7 +55,8 @@ spec = do
       dependencySort [pkg "A", pkg "B/", pkg "D1.0"] >>=
       (`shouldBe` [pkg "B/", pkg "D1.0", pkg "A"])
 
-    it "circular A B C boot" $
+    when (rpmver > makeVersion [4,15]) $
+      it "circular A B C boot" $
       dependencySortRpmOpts ["--with=boot"] [pkg "A", pkg "B", pkg "C"] >>=
       (`shouldBe` [pkg "C", pkg "B", pkg "A"])
 
@@ -64,7 +70,6 @@ spec = do
       leafPackages [pkg "A", pkg "B", pkg "D1.0"] >>=
       (`shouldBe` [pkg "A", pkg "D1.0"])
 
-  -- NB hack: this requires it to be "cabal install"'ed already
   describe "rpmbuild-order" $ do
     it "sort A B" $
       cmd "rpmbuild-order" ["sort", pkg "A", pkg "B"] >>=
