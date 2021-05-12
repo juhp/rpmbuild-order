@@ -191,10 +191,11 @@ createGraph''' ignoredBRs rpmopts verbose lenient rev mdir paths = do
                     case specs of
                       [spec] -> return $ Just spec
                       _ -> if lenient then return Nothing
-                           else error $ if null specs
-                                        then "No spec file found in " ++ path
-                                        else "More than one .spec file found in " ++ dir
-              else error $ "No spec file found for " ++ path
+                           else errorWithoutStackTrace $
+                                if null specs
+                                then "No spec file found in " ++ path
+                                else "More than one .spec file found in " ++ dir
+              else errorWithoutStackTrace $ "No spec file found for " ++ path
           where
             checkFile :: Bool -> FilePath -> IO (Maybe FilePath)
             checkFile may f = do
@@ -203,7 +204,7 @@ createGraph''' ignoredBRs rpmopts verbose lenient rev mdir paths = do
                 then return $ Just f
                 else return $ if may
                               then Nothing
-                              else error $ f ++ " not found"
+                              else errorWithoutStackTrace $ f ++ " not found"
 
             filesWithExtension :: FilePath -> String -> IO [FilePath]
             filesWithExtension dir ext =
@@ -246,10 +247,10 @@ createGraph''' ignoredBRs rpmopts verbose lenient rev mdir paths = do
 
     checkForCycles :: Monad m => PackageGraph -> m ()
     checkForCycles graph =
-      unless (null cycles) $
-        error $ unlines $
-        "Cycles in dependencies:" :
-        intercalate [""] (map (renderCycles . subcycles) cycles)
+      unless (null cycles) $ do
+        let plural = if length cycles > 1 then "s" else ""
+        errorWithoutStackTrace $ unlines $
+          ("ordering not possible due to build dependency cycle" ++ plural ++ ":\n") : intercalate [""] (map (renderCycles . subcycles) cycles)
       where
         cycles :: [[G.Node]]
         cycles =
@@ -270,7 +271,7 @@ createGraph''' ignoredBRs rpmopts verbose lenient rev mdir paths = do
 
         renderCycles :: ([FilePath],[[FilePath]]) -> [String]
         renderCycles (c,sc) =
-          unwords c : if null sc then [] else "Subcycles: " : map unwords sc
+          unwords c : if null sc then [] else "\nSubcycles: " : map unwords sc
 
     getDepsSrcResolved :: [(FilePath,[String],[String])] -> FilePath -> Maybe [FilePath]
     getDepsSrcResolved metadata pkg =
@@ -281,7 +282,7 @@ createGraph''' ignoredBRs rpmopts verbose lenient rev mdir paths = do
           case mapMaybe (\ (p,provs,_) -> if br `elem` provs then Just p else Nothing) metadata of
             [] -> br
             [p] -> p
-            ps -> error $ pkg ++ ": " ++ br ++ " is provided by: " ++ unwords ps
+            ps -> errorWithoutStackTrace $ pkg ++ ": " ++ br ++ " is provided by: " ++ unwords ps
 
         thd (_,_,c) = c
 

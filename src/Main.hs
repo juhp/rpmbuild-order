@@ -73,7 +73,7 @@ sortPackages rpmopts verbose lenient opts mdir pkgs = do
 depsPackages :: Bool -> [String] -> Bool-> [String] -> [String] -> Bool ->  Bool -> Maybe FilePath -> [FilePath] -> IO ()
 depsPackages rev rpmopts verbose excludedPkgs ignoredBRs lenient parallel mdir pkgs = do
   unlessM (and <$> mapM doesDirectoryExist pkgs) $
-    error "Please use package directory paths"
+    errorWithoutStackTrace "Please use package directory paths"
   listDirectory "." >>=
     -- filter out dotfiles
     createGraph''' ignoredBRs rpmopts verbose lenient (not rev) mdir . filter ((/= '.') . head) . filter (`notElem` excludedPkgs) >>=
