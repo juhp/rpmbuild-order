@@ -106,3 +106,4 @@ test-suite test
                  , rpmbuild-order
                  , simple-cmd
                  , unix
+    build-tools:   rpmbuild-order
