@@ -1,3 +1,5 @@
+- fix and re-instate subcycles algorithm checking adjacent connection
+
 - try topograph
 
 - use Set?
