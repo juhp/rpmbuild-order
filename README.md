@@ -4,23 +4,30 @@
 
 # rpmbuild-order
 
-This package originally based on code from [cabal-sort](http://hackage.haskell.org/package/cabal-sort), sorts rpm package spec files by build order.
+This is a tool to sort RPM source packages in build dependency order.
+This code is originally derived from
+[cabal-sort](http://hackage.haskell.org/package/cabal-sort)
+by Henning Thielemann.
+
+## Usage
 
     $ rpmbuild-order --help
+    :
     $ rpmbuild-order sort mycore mylib myapp
     mylib mycore myapp
 
-The arguments passed can either be directories containing the package, or spec files.
+The arguments passed can either be directories containing the package
+or spec files.
 
 If the dependency graph has cycles then an error will be output with
 a list of cycles and any shortest path subcycles.
 
 Using the rpmbuild-order `deps` and `rdeps` commands the ordered
 dependencies and reverse dependencies of a package can be obtained
-from the current set of checked out package sources.
+within the current set of checked out package sources.
 
-The `render` command displays a graph using graphviz and X11 or optionally
-print dot format to stdout.
+The `render` command displays a graph of package dependencies
+using graphviz and X11 or optionally instead prints the dot format to stdout.
 
 ## Library
 As of version 0.4, a library is also provided.
