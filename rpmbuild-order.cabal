@@ -74,7 +74,7 @@ Library
                  directory,
                  extra >= 1.6.4,
                  filepath,
-                 fgl,
+                 fgl >= 5.5.4,
                  graphviz,
                  process
   HS-Source-Dirs:      src

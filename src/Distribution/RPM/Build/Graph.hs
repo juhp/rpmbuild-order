@@ -276,19 +276,21 @@ createGraph'''' checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths = 
         -- shortest subcycle
         subcycles :: [G.Node] -> ([FilePath],[[FilePath]])
         subcycles [] = error "cyclic graph with no nodes!"
-        subcycles cycle'@(n:ns) =
-          let sg = G.emap (const (1 :: Int)) $ G.subgraph cycle' graph
-              -- subcycles are not correctly calculated, so disabled for now
-              -- maybe (filter ((\l -> l >= 2 && l < length cycle') . length) . scc)
-              shorter = nubOrdOn sort $ sortOn length $ filter ((\l -> l < length ns && l > 2) . length) $ catMaybes $ mapAdjacent (\ i j-> sp j i sg) (cycle' ++ [n])
-          in (nodeLabels graph cycle', map (nodeLabels sg) [] {-shorter-})
+        subcycles cycle' =
+          let shorter = nubOrdOn sort $ sortOn length $ filter ((< length cycle') . length) $ mapMaybe findSp $ G.labEdges sg
+          in (nodeLabels graph cycle', map (nodeLabels sg) shorter)
+          where
+            sg = G.emap (const (1 :: Int)) $ G.subgraph cycle' graph
 
-        mapAdjacent :: (a -> a -> b) -> [a] -> [b]
-        mapAdjacent f xs = zipWith f xs (tail xs)
+            findSp (i,j,_) = if G.hasEdge sg (i,j)
+                         then sp j i sg
+                         else if G.hasEdge sg (j,i)
+                              then sp i j sg
+                              else Nothing
 
         renderCycles :: ([FilePath],[[FilePath]]) -> [String]
         renderCycles (c,sc) =
-          unwords c : if null sc then [] else "\nSubcycles: " : map unwords sc
+          unwords c : if null sc then [] else "\nShortest path subcycles: " : map unwords sc
 
     getDepsSrcResolved :: [(FilePath,[String],[String])] -> FilePath -> Maybe [FilePath]
     getDepsSrcResolved metadata pkg =
