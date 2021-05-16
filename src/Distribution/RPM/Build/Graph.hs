@@ -265,17 +265,14 @@ createGraph'''' checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths = 
                        else (srcNode, dstNode,  ())
        in G.mkGraph (map (fmap packagePath) nodes) $ nub edges
 
-    checkForCycles :: Monad m => PackageGraph -> m ()
-    checkForCycles graph =
+    checkForCycles :: PackageGraph -> IO ()
+    checkForCycles graph = do
+      let cycles = filter ((>= 2) . length) (scc graph)
       unless (null cycles) $ do
         let plural = if length cycles > 1 then "s" else ""
         errorWithoutStackTrace $ unlines $
           ("ordering not possible due to build dependency cycle" ++ plural ++ ":\n") : intercalate [""] (map (renderCycles . subcycles) cycles)
       where
-        cycles :: [[G.Node]]
-        cycles =
-           (filter ((>= 2) . length) . scc) graph
-
         -- shortest subcycle
         subcycles :: [G.Node] -> ([FilePath],[[FilePath]])
         subcycles [] = error "cyclic graph with no nodes!"
