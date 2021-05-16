@@ -1,6 +1,9 @@
 # 0.4.4 (2021-05-16)
-- add render command to display graph graphically with graphviz
--
+- add 'render' command to display graph graphically with graphviz
+  with an option to output dot format
+- fix subcycle algorithm: now lists correct shortest path subcycles
+- improve cycles output (#2)
+- library Graph: add printGraph, renderGraph, createGraph''''
 
 # 0.4.3.2 (2021-02-03)
 - intercalate newlines between cycles
