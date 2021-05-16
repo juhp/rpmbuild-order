@@ -263,7 +263,7 @@ createGraph'''' checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths = 
               return $ if rev
                        then (dstNode, srcNode, ())
                        else (srcNode, dstNode,  ())
-       in G.mkGraph (map (fmap packagePath) nodes) edges
+       in G.mkGraph (map (fmap packagePath) nodes) $ nub edges
 
     checkForCycles :: Monad m => PackageGraph -> m ()
     checkForCycles graph =
