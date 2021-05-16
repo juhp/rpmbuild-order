@@ -283,11 +283,9 @@ createGraph'''' checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths = 
           where
             sg = G.emap (const (1 :: Int)) $ G.subgraph cycle' graph
 
-            findSp (i,j,_) = if G.hasEdge sg (i,j)
-                         then sp j i sg
-                         else if G.hasEdge sg (j,i)
-                              then sp i j sg
-                              else Nothing
+            findSp (i,j,_) | G.hasEdge sg (i,j) = sp j i sg
+                           | G.hasEdge sg (j,i) = sp i j sg
+                           | otherwise = Nothing
 
         renderCycles :: ([FilePath],[[FilePath]]) -> [String]
         renderCycles (c,sc) =
@@ -369,7 +367,7 @@ printGraph g = do
     renderDeps :: [String] -> String
     renderDeps [] = ""
     renderDeps [d] = " -> " ++ d
-    renderDeps ds = " -> {" ++ intercalate " " ds ++ "}"
+    renderDeps ds = " -> {" ++ unwords ds ++ "}"
 
 -- | Render graph with graphviz X11 preview
 renderGraph :: PackageGraph -> IO ()
