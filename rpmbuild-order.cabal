@@ -48,7 +48,6 @@ Executable rpmbuild-order
                  optparse-applicative,
                  rpmbuild-order,
                  simple-cmd-args
-
   Main-Is:          src/Main.hs
   Other-modules:    Paths_rpmbuild_order
   GHC-Options:         -Wall

@@ -54,7 +54,7 @@ main =
   , Subcommand "roots" "List lowest root packages" $
     rootPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "render" "Show graph with graphviz" $
-    renderPkgGraph <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
+    renderPkgGraph <$> switchWith 'o' "output" "Print graph in dot format" <*> rpmOpts <*> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
   ]
   where
     verboseOpt = switchWith 'v' "verbose" "Verbose output for debugging"
@@ -120,7 +120,8 @@ rootPackages rpmopts verbose lenient mdir pkgs = do
   graph <- createGraph'' rpmopts verbose lenient True mdir pkgs
   mapM_ putStrLn $ lowestLayer graph
 
-renderPkgGraph :: [String] -> Bool -> Bool -> Maybe FilePath -> [FilePath]
-               -> IO ()
-renderPkgGraph rpmopts verbose lenient mdir pkgs =
-  createGraph'''' False [] rpmopts verbose lenient True mdir pkgs >>= renderGraph
+renderPkgGraph :: Bool -> [String] -> Bool -> Bool -> Maybe FilePath
+               -> [FilePath] -> IO ()
+renderPkgGraph dot rpmopts verbose lenient mdir pkgs =
+  createGraph'''' False [] rpmopts verbose lenient True mdir pkgs >>=
+  if dot then printGraph else renderGraph

@@ -26,6 +26,7 @@ module Distribution.RPM.Build.Graph
    lowestLayer',
    packageLeaves,
    separatePackages,
+   printGraph,
    renderGraph
   ) where
 
@@ -38,7 +39,7 @@ import qualified Data.Graph.Inductive.Graph as G
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
-import Control.Monad (guard, when, unless)
+import Control.Monad (forM_, guard, when, unless)
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import Data.List.Extra (dropSuffix, find, intercalate, nub, nubOrdOn, sort, sortOn)
 import Data.GraphViz
@@ -355,6 +356,20 @@ packageLeaves graph =
 separatePackages :: PackageGraph -> [FilePath]
 separatePackages graph =
   map snd $ G.labNodes $ G.nfilter ((==0) . G.deg graph) graph
+
+-- | Return graphviz dot format of graph
+printGraph :: PackageGraph -> IO ()
+printGraph g = do
+  putStrLn "digraph {"
+  forM_ (G.labNodes g) $ \ (n,l) -> do
+    putStr $ show l
+    putStrLn $ renderDeps $ map show $ mapMaybe (G.lab g . fst) $ G.lsuc g n
+  putStrLn "}"
+  where
+    renderDeps :: [String] -> String
+    renderDeps [] = ""
+    renderDeps [d] = " -> " ++ d
+    renderDeps ds = " -> {" ++ intercalate " " ds ++ "}"
 
 -- | Render graph with graphviz X11 preview
 renderGraph :: PackageGraph -> IO ()
