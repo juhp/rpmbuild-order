@@ -1,5 +1,5 @@
 Name:             rpmbuild-order
-Version:          0.4.3.2
+Version:          0.4.4
 License:          BSD3
 License-File:     LICENSE
 Author:           Henning Thielemann <haskell@henning-thielemann.de>,
@@ -75,6 +75,7 @@ Library
                  extra >= 1.6.4,
                  filepath,
                  fgl,
+                 graphviz,
                  process
   HS-Source-Dirs:      src
   GHC-Options:         -Wall

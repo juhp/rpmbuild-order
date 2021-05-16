@@ -1,3 +1,7 @@
+# 0.4.4 (2021-05-16)
+- add render command to display graph graphically with graphviz
+-
+
 # 0.4.3.2 (2021-02-03)
 - intercalate newlines between cycles
 - only list subcycles with over 2 packages

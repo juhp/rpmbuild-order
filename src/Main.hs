@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP #-}
 
+module Main (main) where
+
 import Control.Applicative (
 #if !MIN_VERSION_simple_cmd_args(0,1,3)
                             (<|>),
@@ -51,6 +53,8 @@ main =
     leavesPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "roots" "List lowest root packages" $
     rootPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
+  , Subcommand "render" "Show graph with graphviz" $
+    renderPkgGraph <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
   ]
   where
     verboseOpt = switchWith 'v' "verbose" "Verbose output for debugging"
@@ -115,3 +119,8 @@ rootPackages :: [String] -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO (
 rootPackages rpmopts verbose lenient mdir pkgs = do
   graph <- createGraph'' rpmopts verbose lenient True mdir pkgs
   mapM_ putStrLn $ lowestLayer graph
+
+renderPkgGraph :: [String] -> Bool -> Bool -> Maybe FilePath -> [FilePath]
+               -> IO ()
+renderPkgGraph rpmopts verbose lenient mdir pkgs =
+  createGraph'''' False [] rpmopts verbose lenient True mdir pkgs >>= renderGraph

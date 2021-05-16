@@ -18,13 +18,15 @@ module Distribution.RPM.Build.Graph
    createGraph',
    createGraph'',
    createGraph''',
+   createGraph'''',
    dependencyNodes,
    subgraph',
    packageLayers,
    lowestLayer,
    lowestLayer',
    packageLeaves,
-   separatePackages
+   separatePackages,
+   renderGraph
   ) where
 
 import qualified Data.CaseInsensitive as CI
@@ -38,7 +40,8 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad (guard, when, unless)
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
-import Data.List.Extra (dropSuffix, find, intercalate, nubOrdOn, sort, sortOn)
+import Data.List.Extra (dropSuffix, find, intercalate, nub, nubOrdOn, sort, sortOn)
+import Data.GraphViz
 import System.Directory (doesDirectoryExist, doesFileExist,
 #if MIN_VERSION_directory(1,2,5)
                          listDirectory
@@ -146,13 +149,30 @@ createGraph''' :: [String] -- ^ ignored BuildRequires
                -> Maybe FilePath -- ^ look for spec file in a subdirectory
                -> [FilePath] -- ^ package paths (directories or spec filepaths)
                -> IO PackageGraph -- ^ dependency graph labelled by package paths
-createGraph''' ignoredBRs rpmopts verbose lenient rev mdir paths = do
+createGraph''' = createGraph'''' True
+
+-- | Create a directed dependency graph for a set of packages
+--
+-- Like createGraph''' but can disable check for cycles
+--
+-- @since 0.4.4
+createGraph'''' :: Bool -- ^ check for cycles
+                -> [String] -- ^ ignored BuildRequires
+                -> [String] -- ^ rpmspec options
+                -> Bool -- ^ verbose
+                -> Bool -- ^ lenient (skip rpmspec failures)
+                -> Bool -- ^ reverse dependency graph
+                -> Maybe FilePath -- ^ look for spec file in a subdirectory
+                -> [FilePath] -- ^ package paths (directories or spec filepaths)
+                -> IO PackageGraph -- ^ dependency graph labelled by package paths
+createGraph'''' checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths = do
   metadata <- catMaybes <$> mapM readSpecMetadata paths
   let realpkgs = map fst3 metadata
       deps = mapMaybe (getDepsSrcResolved metadata) realpkgs
       spkgs = zipWith SourcePackage realpkgs deps
       graph = getBuildGraph spkgs
-  checkForCycles graph
+  when checkcycles $
+    checkForCycles graph
   return graph
   where
     readSpecMetadata :: FilePath -> IO (Maybe (FilePath,[String],[String]))
@@ -336,3 +356,9 @@ packageLeaves graph =
 separatePackages :: PackageGraph -> [FilePath]
 separatePackages graph =
   map snd $ G.labNodes $ G.nfilter ((==0) . G.deg graph) graph
+
+-- | Render graph with graphviz X11 preview
+renderGraph :: PackageGraph -> IO ()
+renderGraph graph =
+  let g = G.emap (const ("" :: String)) graph
+  in runGraphvizCanvas' (setDirectedness graphToDot quickParams g) Xlib
