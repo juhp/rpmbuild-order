@@ -371,6 +371,10 @@ printGraph g = do
 
 -- | Render graph with graphviz X11 preview
 renderGraph :: PackageGraph -> IO ()
-renderGraph graph =
-  let g = G.emap (const ("" :: String)) graph
-  in runGraphvizCanvas' (setDirectedness graphToDot quickParams g) Xlib
+renderGraph graph = do
+  gv <- isGraphvizInstalled
+  if gv
+    then do
+    let g = G.emap (const ("" :: String)) graph
+    runGraphvizCanvas' (setDirectedness graphToDot quickParams g) Xlib
+    else errorWithoutStackTrace "please install graphviz first"
