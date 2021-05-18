@@ -9,7 +9,7 @@ import System.Posix.Files
 main :: IO ()
 main = do
   setupSymlinks
-  -- rpmspec < 4.15 does not support "--with"
+  -- rpmspec < 4.15.1 does not support "--with"
   rpmver <- readVersion . last . words <$> cmd "rpmspec" ["--version"]
   hspec (spec rpmver)
 
@@ -55,7 +55,7 @@ spec rpmver = do
       dependencySort [pkg "A", pkg "B/", pkg "D1.0"] >>=
       (`shouldBe` [pkg "B/", pkg "D1.0", pkg "A"])
 
-    when (rpmver > makeVersion [4,15]) $
+    when (rpmver > makeVersion [4,15,1]) $
       it "circular A B C boot" $
       dependencySortRpmOpts ["--with=boot"] [pkg "A", pkg "B", pkg "C"] >>=
       (`shouldBe` [pkg "C", pkg "B", pkg "A"])
