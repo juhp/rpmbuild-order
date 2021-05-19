@@ -1,3 +1,6 @@
+# 0.4.4.1 (2021-05-19)
+- 'render': friendly error message if graphviz is not installed
+
 # 0.4.4 (2021-05-16)
 - add 'render' command to display graph graphically with graphviz
   with an option to output dot format

@@ -1,5 +1,5 @@
 Name:             rpmbuild-order
-Version:          0.4.4
+Version:          0.4.4.1
 License:          BSD3
 License-File:     LICENSE
 Author:           Jens Petersen <petersen@redhat.com>,
@@ -10,7 +10,7 @@ Copyright:        2010-2018  Henning Thielemann,
 Category:         Distribution
 Homepage:         https://github.com/juhp/rpmbuild-order
 Bug-reports:      https://github.com/juhp/rpmbuild-order/issues
-Synopsis:         Order RPM packages by dependencies
+Synopsis:         Sort RPM packages in dependency order
 Description:
   The rpmbuild-order tool sorts source RPM packages by build dependencies,
   so that they can be built in a correct order. It does this by reading RPM
