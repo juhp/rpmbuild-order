@@ -1,3 +1,7 @@
+# 0.4.5 (2021-05-29)
+- 'render': do not reverse arrows
+- 'render': rename -o/--output option to -g/--gv-output
+
 # 0.4.4.1 (2021-05-19)
 - 'render': friendly error message if graphviz is not installed
 
