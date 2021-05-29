@@ -54,7 +54,7 @@ main =
   , Subcommand "roots" "List lowest root packages" $
     rootPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "render" "Show graph with graphviz" $
-    renderPkgGraph <$> switchWith 'o' "output" "Print graph in dot format" <*> rpmOpts <*> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
+    renderPkgGraph <$> switchWith 'g' "gv-output" "Output graph in gv/dot format" <*> rpmOpts <*> verboseOpt <*> lenientOpt <*> subdirOpt <*> pkgArgs
   ]
   where
     verboseOpt = switchWith 'v' "verbose" "Verbose output for debugging"
