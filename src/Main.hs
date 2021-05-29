@@ -123,5 +123,5 @@ rootPackages rpmopts verbose lenient mdir pkgs = do
 renderPkgGraph :: Bool -> [String] -> Bool -> Bool -> Maybe FilePath
                -> [FilePath] -> IO ()
 renderPkgGraph dot rpmopts verbose lenient mdir pkgs =
-  createGraph'''' False [] rpmopts verbose lenient True mdir pkgs >>=
+  createGraph'''' False [] rpmopts verbose lenient False mdir pkgs >>=
   if dot then printGraph else renderGraph
