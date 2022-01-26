@@ -45,7 +45,7 @@ main =
     depsPackages False <$> rpmOpts <*> verboseOpt <*> excludeOpts <*> ignoredBRopts <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "rdeps" "sort dependents" $
     depsPackages True <$> rpmOpts <*> verboseOpt <*> excludeOpts <*> ignoredBRopts <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
-  , Subcommand "layers" "ordered output suitable for a chain-build" $
+  , Subcommand "layers" "ordered output of dependency layers" $
     layerPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "chain" "ordered output suitable for a chain-build" $
     chainPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
