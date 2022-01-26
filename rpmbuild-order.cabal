@@ -72,7 +72,7 @@ Library
                  containers,
                  directory,
                  extra >= 1.6.4,
-                 filepath,
+                 filepath >= 1.4.2,
                  fgl >= 5.5.4,
                  graphviz,
                  process

@@ -1,3 +1,3 @@
 [versions]
-# lts-9 too old
-oldest = lts-10
+# lts11 filepath missing isExtensionOf
+oldest = lts-12

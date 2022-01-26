@@ -229,7 +229,7 @@ createGraph'''' checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths = 
 
             filesWithExtension :: FilePath -> String -> IO [FilePath]
             filesWithExtension dir ext =
-              map (dir </>) . filter (\ f -> takeExtension f == ext) <$>
+              map (dir </>) . filter (ext `isExtensionOf`) <$>
               listDirectory dir
 
         extractMetadata :: FilePath -> ([String],[String]) -> [String] -> ([String],[String])
