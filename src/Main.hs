@@ -95,7 +95,8 @@ listDirectory path =
 layerPackages :: [String] -> Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 layerPackages rpmopts verbose lenient combine mdir pkgs = do
   graph <- createGraph'' rpmopts verbose lenient True mdir pkgs
-  if combine then printLayers graph
+  if combine
+    then printLayers graph
     else mapM_ (printLayers . subgraph' graph) (components graph)
   where
     printLayers =  putStrLn . unlines . map unwords . packageLayers
