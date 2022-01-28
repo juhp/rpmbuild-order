@@ -15,6 +15,10 @@ module Distribution.RPM.Build.Graph
   (PackageGraph,
    createGraph,
    createGraphRpmOpts,
+   createGraph1,
+   createGraph2,
+   createGraph3,
+   createGraph4,
    createGraph',
    createGraph'',
    createGraph''',
@@ -90,34 +94,45 @@ dependencyNodes subset graph =
     third (_, _, c, _) = c
 
 -- | Create a directed dependency graph for a set of packages
--- This is a convenience wrapper for createGraph' False False True Nothing
+-- This is a convenience wrapper for createGraph1 False False True Nothing
 createGraph :: [FilePath] -- ^ package paths (directories or spec filepaths)
             -> IO PackageGraph -- ^ dependency graph labelled by package paths
-createGraph = createGraph' False False True Nothing
+createGraph = createGraph1 False False True Nothing
 
 -- | Create a directed dependency graph for a set of packages setting rpm options
--- This is a convenience wrapper for @createGraph'' rpmopts False False True Nothing@
+-- This is a convenience wrapper for @createGraph2 rpmopts False False True Nothing@
 --
 -- @since 0.4.2
 createGraphRpmOpts :: [String] -- ^ rpmspec options
                    -> [FilePath] -- ^ package paths (directories or spec filepaths)
                    -> IO PackageGraph -- ^ dependency graph labelled by package paths
 createGraphRpmOpts rpmopts =
-  createGraph'' rpmopts False False True Nothing
+  createGraph2 rpmopts False False True Nothing
 
 -- | Create a directed dependency graph for a set of packages
 -- For the (createGraph default) reverse deps graph the arrows point back
 -- from the dependencies to the dependendent (parent/consumer) packages,
 -- and this allows forward sorting by dependencies (ie lowest deps first).
 --
--- This is the same as @createGraph'' []@
+-- This is the same as @createGraph2 []@
+--
+-- @since 0.4.6
+createGraph1 :: Bool -- ^ verbose
+             -> Bool -- ^ lenient (skip rpmspec failures)
+             -> Bool -- ^ reverse dependency graph
+             -> Maybe FilePath -- ^ look for spec file in a subdirectory
+             -> [FilePath] -- ^ package paths (directories or spec filepaths)
+             -> IO PackageGraph -- ^ dependency graph labelled by package paths
+createGraph1 = createGraph2 []
+
+-- | Alias for createGraph1
 createGraph' :: Bool -- ^ verbose
              -> Bool -- ^ lenient (skip rpmspec failures)
              -> Bool -- ^ reverse dependency graph
              -> Maybe FilePath -- ^ look for spec file in a subdirectory
              -> [FilePath] -- ^ package paths (directories or spec filepaths)
              -> IO PackageGraph -- ^ dependency graph labelled by package paths
-createGraph' = createGraph'' []
+createGraph' = createGraph1
 
 -- | Create a directed dependency graph for a set of packages
 -- For the (createGraph default) reverse deps graph the arrows point back
@@ -127,7 +142,19 @@ createGraph' = createGraph'' []
 -- Additionally this function allows passing options to rpmspec:
 -- eg `--with bootstrap` etc
 --
--- @since 0.4.2
+-- @since 0.4.6
+createGraph2 :: [String] -- ^ rpmspec options
+             -> Bool -- ^ verbose
+             -> Bool -- ^ lenient (skip rpmspec failures)
+             -> Bool -- ^ reverse dependency graph
+             -> Maybe FilePath -- ^ look for spec file in a subdirectory
+             -> [FilePath] -- ^ package paths (directories or spec filepaths)
+             -> IO PackageGraph -- ^ dependency graph labelled by package paths
+createGraph2 = createGraph3 []
+
+-- | Alias for createGraph2
+--
+-- @since 0.4.2 (deprecated)
 createGraph'' :: [String] -- ^ rpmspec options
               -> Bool -- ^ verbose
               -> Bool -- ^ lenient (skip rpmspec failures)
@@ -135,13 +162,26 @@ createGraph'' :: [String] -- ^ rpmspec options
               -> Maybe FilePath -- ^ look for spec file in a subdirectory
               -> [FilePath] -- ^ package paths (directories or spec filepaths)
               -> IO PackageGraph -- ^ dependency graph labelled by package paths
-createGraph'' = createGraph''' []
+createGraph'' = createGraph2
 
 -- | Create a directed dependency graph for a set of packages
 --
--- Like createGraph'' but with additional parameter for any BRs to be ignored.
+-- Like createGraph2 but with additional parameter for any BRs to be ignored.
 --
--- @since 0.4.3
+-- @since 0.4.6
+createGraph3 :: [String] -- ^ ignored BuildRequires
+             -> [String] -- ^ rpmspec options
+             -> Bool -- ^ verbose
+             -> Bool -- ^ lenient (skip rpmspec failures)
+             -> Bool -- ^ reverse dependency graph
+             -> Maybe FilePath -- ^ look for spec file in a subdirectory
+             -> [FilePath] -- ^ package paths (directories or spec filepaths)
+             -> IO PackageGraph -- ^ dependency graph labelled by package paths
+createGraph3 = createGraph4 True
+
+-- | Alias for createGraph3
+--
+-- @since 0.4.3 (deprecated)
 createGraph''' :: [String] -- ^ ignored BuildRequires
                -> [String] -- ^ rpmspec options
                -> Bool -- ^ verbose
@@ -150,23 +190,24 @@ createGraph''' :: [String] -- ^ ignored BuildRequires
                -> Maybe FilePath -- ^ look for spec file in a subdirectory
                -> [FilePath] -- ^ package paths (directories or spec filepaths)
                -> IO PackageGraph -- ^ dependency graph labelled by package paths
-createGraph''' = createGraph'''' True
+createGraph''' = createGraph3
 
 -- | Create a directed dependency graph for a set of packages
 --
--- Like createGraph''' but can disable check for cycles
+-- Like createGraph3 but can disable check for cycles
 --
--- @since 0.4.4
-createGraph'''' :: Bool -- ^ check for cycles
-                -> [String] -- ^ ignored BuildRequires
-                -> [String] -- ^ rpmspec options
-                -> Bool -- ^ verbose
-                -> Bool -- ^ lenient (skip rpmspec failures)
-                -> Bool -- ^ reverse dependency graph
-                -> Maybe FilePath -- ^ look for spec file in a subdirectory
-                -> [FilePath] -- ^ package paths (directories or spec filepaths)
-                -> IO PackageGraph -- ^ dependency graph labelled by package paths
-createGraph'''' checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths = do
+-- @since 0.4.6
+createGraph4 :: Bool -- ^ check for cycles
+             -> [String] -- ^ ignored BuildRequires
+             -> [String] -- ^ rpmspec options
+             -> Bool -- ^ verbose
+             -> Bool -- ^ lenient (skip rpmspec failures)
+             -> Bool -- ^ reverse dependency graph
+             -> Maybe FilePath -- ^ look for spec file in a subdirectory
+             -> [FilePath] -- ^ package paths (directories or spec filepaths)
+             -> IO PackageGraph -- ^ dependency graph labelled by package paths
+createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
+  do
   metadata <- catMaybes <$> mapM readSpecMetadata paths
   let realpkgs = map fst3 metadata
       deps = mapMaybe (getDepsSrcResolved metadata) realpkgs
@@ -322,6 +363,20 @@ createGraph'''' checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths = 
 
     warn :: String -> IO ()
     warn = hPutStrLn stderr
+
+-- | Alias for createGraph4
+--
+-- @since 0.4.4 (deprecated)
+createGraph'''' :: Bool -- ^ check for cycles
+                -> [String] -- ^ ignored BuildRequires
+                -> [String] -- ^ rpmspec options
+                -> Bool -- ^ verbose
+                -> Bool -- ^ lenient (skip rpmspec failures)
+                -> Bool -- ^ reverse dependency graph
+                -> Maybe FilePath -- ^ look for spec file in a subdirectory
+                -> [FilePath] -- ^ package paths (directories or spec filepaths)
+                -> IO PackageGraph -- ^ dependency graph labelled by package paths
+createGraph'''' = createGraph4
 
 -- | A flipped version of subgraph
 subgraph' :: Gr a b -> [G.Node] -> Gr a b

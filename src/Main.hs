@@ -72,7 +72,7 @@ main =
 
 sortPackages :: [String] -> Bool -> Bool -> Components -> Maybe FilePath -> [FilePath] -> IO ()
 sortPackages rpmopts verbose lenient opts mdir pkgs = do
-  createGraph'' rpmopts verbose lenient True mdir pkgs >>= sortGraph opts
+  createGraph2 rpmopts verbose lenient True mdir pkgs >>= sortGraph opts
 
 depsPackages :: Bool -> [String] -> Bool-> [String] -> [String] -> Bool ->  Bool -> Maybe FilePath -> [FilePath] -> IO ()
 depsPackages rev rpmopts verbose excludedPkgs ignoredBRs lenient parallel mdir pkgs = do
@@ -80,8 +80,8 @@ depsPackages rev rpmopts verbose excludedPkgs ignoredBRs lenient parallel mdir p
     errorWithoutStackTrace "Please use package directory paths"
   listDirectory "." >>=
     -- filter out dotfiles
-    createGraph''' ignoredBRs rpmopts verbose lenient (not rev) mdir . filter ((/= '.') . head) . filter (`notElem` excludedPkgs) >>=
-    createGraph'' rpmopts verbose lenient True mdir . dependencyNodes pkgs >>=
+    createGraph3 ignoredBRs rpmopts verbose lenient (not rev) mdir . filter ((/= '.') . head) . filter (`notElem` excludedPkgs) >>=
+    createGraph2 rpmopts verbose lenient True mdir . dependencyNodes pkgs >>=
     sortGraph (if parallel then Parallel else Combine)
 
 #if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,5))
@@ -94,7 +94,7 @@ listDirectory path =
 
 layerPackages :: [String] -> Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 layerPackages rpmopts verbose lenient combine mdir pkgs = do
-  graph <- createGraph'' rpmopts verbose lenient True mdir pkgs
+  graph <- createGraph2 rpmopts verbose lenient True mdir pkgs
   if combine
     then printLayers graph
     else mapM_ (printLayers . subgraph' graph) (components graph)
@@ -103,7 +103,7 @@ layerPackages rpmopts verbose lenient combine mdir pkgs = do
 
 chainPackages :: [String] -> Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 chainPackages rpmopts verbose lenient combine mdir pkgs = do
-  graph <- createGraph'' rpmopts verbose lenient True mdir pkgs
+  graph <- createGraph2 rpmopts verbose lenient True mdir pkgs
   if combine then doChain graph
     else mapM_ (doChain . subgraph' graph) (components graph)
   where
@@ -113,16 +113,16 @@ chainPackages rpmopts verbose lenient combine mdir pkgs = do
 
 leavesPackages :: [String] -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 leavesPackages rpmopts verbose lenient mdir pkgs = do
-  graph <- createGraph'' rpmopts verbose lenient True mdir pkgs
+  graph <- createGraph2 rpmopts verbose lenient True mdir pkgs
   mapM_ putStrLn $ packageLeaves graph
 
 rootPackages :: [String] -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
 rootPackages rpmopts verbose lenient mdir pkgs = do
-  graph <- createGraph'' rpmopts verbose lenient True mdir pkgs
+  graph <- createGraph2 rpmopts verbose lenient True mdir pkgs
   mapM_ putStrLn $ lowestLayer graph
 
 renderPkgGraph :: Bool -> [String] -> Bool -> Bool -> Maybe FilePath
                -> [FilePath] -> IO ()
 renderPkgGraph dot rpmopts verbose lenient mdir pkgs =
-  createGraph'''' False [] rpmopts verbose lenient False mdir pkgs >>=
+  createGraph4 False [] rpmopts verbose lenient False mdir pkgs >>=
   if dot then printGraph else renderGraph
