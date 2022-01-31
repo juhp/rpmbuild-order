@@ -68,14 +68,12 @@ Library
   Exposed-Modules:  Distribution.RPM.Build.Graph
                     Distribution.RPM.Build.Order
   Build-Depends: base < 5,
-                 case-insensitive,
-                 containers,
                  directory,
                  extra >= 1.6.4,
                  filepath >= 1.4.2,
                  fgl >= 5.5.4,
                  graphviz,
-                 process
+                 simple-cmd
   HS-Source-Dirs:      src
   GHC-Options:         -Wall
   if impl(ghc >= 8.0)
