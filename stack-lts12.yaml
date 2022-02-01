@@ -1,3 +1,4 @@
 resolver: lts-12.26
 extra-deps:
   - simple-cmd-args-0.1.2
+  - simple-cmd-0.2.3
