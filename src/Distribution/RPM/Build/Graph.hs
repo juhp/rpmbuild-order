@@ -44,7 +44,8 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad (forM_, guard, when, unless)
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
-import Data.List.Extra (dropSuffix, find, intercalate, nub, nubOrdOn, sort, sortOn, (\\))
+import Data.List.Extra (dropSuffix, find, intercalate, isPrefixOf,
+                        nub, nubOrdOn, sort, sortOn, (\\))
 import Data.GraphViz
 import SimpleCmd
 import System.Directory (doesDirectoryExist, doesFileExist,
@@ -351,7 +352,8 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
         unless (null err) $
           when verbose $ warn err
         -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
-        cmdLines "rpm" ["-qp", "--requires", last (words out)]
+        filter (not . ("rpmlib(" `isPrefixOf`)) <$>
+          cmdLines "rpm" ["-qp", "--requires", last (words out)]
         else do
         (ok, out, err) <- cmdFull "rpmspec" (["--define", "ghc_version any", "-q", "--buildrequires"] ++ rpmopts ++ [spec]) ""
         unless (null err) $ warn err
