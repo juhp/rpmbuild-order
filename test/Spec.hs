@@ -55,6 +55,10 @@ spec rpmver = do
       dependencySort [pkg "A", pkg "B/", pkg "D1.0"] >>=
       (`shouldBe` [pkg "B/", pkg "D1.0", pkg "A"])
 
+    it "sort dynbr A B" $
+      dependencySort [pkg "dynbr/A", pkg "B"] >>=
+      (`shouldBe` [pkg "B", pkg "dynbr/A"])
+
     when (rpmver > makeVersion [4,15,1]) $
       it "circular A B C boot" $
       dependencySortRpmOpts ["--with=boot"] [pkg "A", pkg "B", pkg "C"] >>=

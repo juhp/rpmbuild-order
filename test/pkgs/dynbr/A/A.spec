@@ -3,10 +3,12 @@ Version:        1
 Release:        1%{?dist}
 Summary:        package A
 License:        GPL
-BuildRequires:  B-devel
 
 %description
 Test package A
+
+%generate_buildrequires
+echo B-devel
 
 %package -n C-A
 Summary: A for C
