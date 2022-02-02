@@ -62,3 +62,11 @@ BuildRequires than Requires.
 
 3. rpmspec is used to parse spec files (for macro expansion etc):
 so missing macros packages can lead to erroneous results in some cases.
+
+## Installation
+
+rpmbuild-order is packaged in Fedora Linux.
+
+## Building from source
+
+Use `cabal-rpm builddep && cabal-install` or `stack install`.
