@@ -59,8 +59,6 @@ import System.Directory (doesDirectoryExist, doesFileExist,
                         )
 import System.Exit (exitFailure)
 import System.FilePath
--- replace with warning
-import System.IO (hPutStrLn, stderr)
 
 #if !MIN_VERSION_directory(1,2,5)
 listDirectory :: FilePath -> IO [FilePath]
@@ -225,26 +223,28 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
       case mspecdir of
         Nothing -> return Nothing
         Just (dir,spec) -> do
-          when verbose $ warn spec
+          when verbose $ warning spec
           withCurrentDirectory dir $ do
             dynbr <- grep_ "^%generate_buildrequires" spec
             if dynbr
               then do
               provs <- rpmspecProvides spec
               brs <- rpmspecDynBuildRequires spec
+              when verbose $ do
+                warning $ show $ sort provs
+                warning $ show $ sort brs
               return $ Just (path, nub provs, nub brs \\ ignoredBRs)
               else do
               mcontent <- rpmspecParse spec
               case mcontent of
                 Nothing -> return Nothing
-                Just content ->
+                Just content -> do
                   let pkg = takeBaseName spec
                       (provs,brs) = extractMetadata pkg ([],[]) $ lines content
-                  in return (Just (path, provs, brs))
-
-            -- when verbose $ do
-            --   warn $ show $ sort provides
-            --   warn $ show $ sort buildrequires
+                  when verbose $ do
+                    warning $ show $ sort provs
+                    warning $ show $ sort brs
+                  return (Just (path, provs, brs))
       where
         -- (dir,specfile)
         findSpec :: IO (Maybe (FilePath,FilePath))
@@ -372,7 +372,7 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
     rpmspecParse :: FilePath -> IO (Maybe String)
     rpmspecParse spec = do
       (ok, out, err) <- cmdFull "rpmspec" (["-P", "--define", "ghc_version any"] ++ rpmopts ++ [spec]) ""
-      unless (null err) $ warn err
+      unless (null err) $ warning err
       if ok
         then return $ Just out
         else if lenient then return Nothing else exitFailure
@@ -380,7 +380,7 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
     rpmspecProvides :: FilePath -> IO [String]
     rpmspecProvides spec = do
       (ok, out, err) <- cmdFull "rpmspec" (["--define", "ghc_version any", "-q", "--provides"] ++ rpmopts ++ [spec]) ""
-      unless (null err) $ warn err
+      unless (null err) $ warning err
       if ok
         then return $ map (head . words) $ lines out
         else if lenient then return [] else exitFailure
@@ -389,7 +389,7 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
     rpmspecDynBuildRequires spec = do
       (out,err) <- cmdStdErr "rpmbuild" ["-br", "--nodeps", spec]
       unless (null err) $
-        when verbose $ warn err
+        when verbose $ warning err
       -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
       filter (not . ("rpmlib(" `isPrefixOf`)) <$>
         cmdLines "rpm" ["-qp", "--requires", last (words out)]
@@ -397,13 +397,10 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
     -- rpmspecBuildRequires :: FilePath -> IO [String]
     -- rpmspecBuildRequires spec = do
     --   (ok, out, err) <- cmdFull "rpmspec" (["--define", "ghc_version any", "-q", "--buildrequires"] ++ rpmopts ++ [spec]) ""
-    --   unless (null err) $ warn err
+    --   unless (null err) $ warning err
     --   if ok
     --     then return $ lines out
     --     else if lenient then return [] else exitFailure
-
-    warn :: String -> IO ()
-    warn = hPutStrLn stderr
 
 -- | Alias for createGraph4
 --
