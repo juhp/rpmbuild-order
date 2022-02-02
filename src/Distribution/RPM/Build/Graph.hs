@@ -45,8 +45,7 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad (forM_, guard, when, unless)
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
-import Data.List.Extra (dropSuffix, find, intercalate, isPrefixOf,
-                        nub, nubOrdOn, sort, sortOn, (\\))
+import Data.List.Extra
 import Data.GraphViz
 import SimpleCmd
 import System.Directory (doesDirectoryExist, doesFileExist,
@@ -226,25 +225,28 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
           when verbose $ warning spec
           withCurrentDirectory dir $ do
             dynbr <- grep_ "^%generate_buildrequires" spec
-            if dynbr
+            mprovbrs <-
+              if dynbr
               then do
-              provs <- rpmspecProvides spec
-              brs <- rpmspecDynBuildRequires spec
-              when verbose $ do
-                warning $ show $ sort provs
-                warning $ show $ sort brs
-              return $ Just (path, nub provs, nub brs \\ ignoredBRs)
+                provs <- rpmspecProvides spec
+                brs <- rpmspecDynBuildRequires spec
+                return $ Just (provs,brs)
               else do
-              mcontent <- rpmspecParse spec
-              case mcontent of
-                Nothing -> return Nothing
-                Just content -> do
-                  let pkg = takeBaseName spec
-                      (provs,brs) = extractMetadata pkg ([],[]) $ lines content
-                  when verbose $ do
-                    warning $ show $ sort provs
-                    warning $ show $ sort brs
-                  return (Just (path, provs, brs))
+                mcontent <- rpmspecParse spec
+                return $ case mcontent of
+                           Nothing -> Nothing
+                           Just content ->
+                             let pkg = takeBaseName spec
+                             in Just $ extractMetadata pkg ([],[]) $ lines content
+            case mprovbrs of
+              Nothing -> return Nothing
+              Just (provs,brs) -> do
+                when verbose $ do
+                  warning $ show $ sort provs
+                  warning $ show $ mapMaybe simplifyDep $ sort brs
+                return $ Just (path,
+                               nub provs, -- FIXME filter 'name(arch)'
+                               nub (mapMaybe simplifyDep brs) \\ ignoredBRs)
       where
         -- (dir,specfile)
         findSpec :: IO (Maybe (FilePath,FilePath))
@@ -391,8 +393,16 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
       unless (null err) $
         when verbose $ warning err
       -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
-      filter (not . ("rpmlib(" `isPrefixOf`)) <$>
-        cmdLines "rpm" ["-qp", "--requires", last (words out)]
+      cmdLines "rpm" ["-qp", "--requires", last (words out)]
+
+    simplifyDep br =
+      case (head . words) br of
+        '(':dep -> simplifyDep dep
+        dep -> case splitOn "(" (dropSuffix ")" dep) of
+          ("rpmlib":_) -> Nothing
+          ("crate":[crate]) -> Just $ "rust-" ++ replace "/" "+" crate ++ "-devel"
+          ("rubygem":[gem]) -> Just $ "rubygem-" ++ gem
+          _ -> Just dep
 
     -- rpmspecBuildRequires :: FilePath -> IO [String]
     -- rpmspecBuildRequires spec = do
