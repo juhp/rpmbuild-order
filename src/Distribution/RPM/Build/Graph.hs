@@ -34,6 +34,7 @@ module Distribution.RPM.Build.Graph
    renderGraph
   ) where
 
+import qualified Data.CaseInsensitive as CI
 import Data.Graph.Inductive.Query.DFS (scc, xdfsWith)
 import Data.Graph.Inductive.Query.SP (sp)
 import Data.Graph.Inductive.PatriciaTree (Gr)
@@ -226,12 +227,24 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
         Just (dir,spec) -> do
           when verbose $ warn spec
           withCurrentDirectory dir $ do
-            provides <- rpmspecProvides spec
-            buildrequires <- rpmspecBuildRequires spec
-            when verbose $ do
-              warn $ show $ sort provides
-              warn $ show $ sort buildrequires
-            return $ Just (path, nub provides, nub buildrequires \\ ignoredBRs)
+            dynbr <- grep_ "^%generate_buildrequires" spec
+            if dynbr
+              then do
+              provs <- rpmspecProvides spec
+              brs <- rpmspecDynBuildRequires spec
+              return $ Just (path, nub provs, nub brs \\ ignoredBRs)
+              else do
+              mcontent <- rpmspecParse spec
+              case mcontent of
+                Nothing -> return Nothing
+                Just content ->
+                  let pkg = takeBaseName spec
+                      (provs,brs) = extractMetadata pkg ([],[]) $ lines content
+                  in return (Just (path, provs, brs))
+
+            -- when verbose $ do
+            --   warn $ show $ sort provides
+            --   warn $ show $ sort buildrequires
       where
         -- (dir,specfile)
         findSpec :: IO (Maybe (FilePath,FilePath))
@@ -275,6 +288,27 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
             filesWithExtension dir ext =
               map (dir </>) . filter (ext `isExtensionOf`) <$>
               listDirectory dir
+
+        extractMetadata :: FilePath -> ([String],[String]) -> [String] -> ([String],[String])
+        extractMetadata _ acc [] = acc
+        extractMetadata pkg acc@(provs,brs) (l:ls) =
+          let ws = words l in
+            if length ws < 2 then extractMetadata pkg acc ls
+            else case CI.mk (head ws) of
+              "BuildRequires:" ->
+                let br = (head . tail) ws
+                    brs' = if br `elem` ignoredBRs then brs else br:brs
+                in extractMetadata pkg (provs, brs') ls
+              "Name:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
+              "Provides:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
+              "%package" ->
+                let subpkg =
+                      let sub = last ws in
+                        if length ws == 2
+                        then pkg ++ '-' : sub
+                        else sub
+                in extractMetadata pkg (subpkg : provs, brs) ls
+              _ -> extractMetadata pkg acc ls
 
     getBuildGraph :: [SourcePackage] -> PackageGraph
     getBuildGraph srcPkgs =
@@ -335,6 +369,14 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
        map (fromMaybe (error "node not found in graph") .
             G.lab graph)
 
+    rpmspecParse :: FilePath -> IO (Maybe String)
+    rpmspecParse spec = do
+      (ok, out, err) <- cmdFull "rpmspec" (["-P", "--define", "ghc_version any"] ++ rpmopts ++ [spec]) ""
+      unless (null err) $ warn err
+      if ok
+        then return $ Just out
+        else if lenient then return Nothing else exitFailure
+
     rpmspecProvides :: FilePath -> IO [String]
     rpmspecProvides spec = do
       (ok, out, err) <- cmdFull "rpmspec" (["--define", "ghc_version any", "-q", "--provides"] ++ rpmopts ++ [spec]) ""
@@ -343,23 +385,22 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
         then return $ map (head . words) $ lines out
         else if lenient then return [] else exitFailure
 
-    rpmspecBuildRequires :: FilePath -> IO [String]
-    rpmspecBuildRequires spec = do
-      dynbr <- grep_ "^%generate_buildrequires" spec
-      if dynbr
-        then do
-        (out,err) <- cmdStdErr "rpmbuild" ["-br", "--nodeps", spec]
-        unless (null err) $
-          when verbose $ warn err
-        -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
-        filter (not . ("rpmlib(" `isPrefixOf`)) <$>
-          cmdLines "rpm" ["-qp", "--requires", last (words out)]
-        else do
-        (ok, out, err) <- cmdFull "rpmspec" (["--define", "ghc_version any", "-q", "--buildrequires"] ++ rpmopts ++ [spec]) ""
-        unless (null err) $ warn err
-        if ok
-          then return $ lines out
-          else if lenient then return [] else exitFailure
+    rpmspecDynBuildRequires :: FilePath -> IO [String]
+    rpmspecDynBuildRequires spec = do
+      (out,err) <- cmdStdErr "rpmbuild" ["-br", "--nodeps", spec]
+      unless (null err) $
+        when verbose $ warn err
+      -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
+      filter (not . ("rpmlib(" `isPrefixOf`)) <$>
+        cmdLines "rpm" ["-qp", "--requires", last (words out)]
+
+    -- rpmspecBuildRequires :: FilePath -> IO [String]
+    -- rpmspecBuildRequires spec = do
+    --   (ok, out, err) <- cmdFull "rpmspec" (["--define", "ghc_version any", "-q", "--buildrequires"] ++ rpmopts ++ [spec]) ""
+    --   unless (null err) $ warn err
+    --   if ok
+    --     then return $ lines out
+    --     else if lenient then return [] else exitFailure
 
     warn :: String -> IO ()
     warn = hPutStrLn stderr
