@@ -1,3 +1,11 @@
+# 0.4.6 (2022-02-XX)
+- handle Dynamic BuildRequires (#3)
+  with special support for rust and ruby BRs
+- Graph: new aliases createGraph1 for createGraph',
+  createGraph2 for createGraph'', createGraph3 for createGraph''',
+  and createGraph4 for createGraph'''' (deprecating the primed names)
+- Graph: use simple-cmd
+
 # 0.4.5 (2021-05-29)
 - 'render': do not reverse arrows
 - 'render': rename -o/--output option to -g/--gv-output
