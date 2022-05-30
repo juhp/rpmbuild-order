@@ -50,16 +50,18 @@ import Data.GraphViz
 import SimpleCmd
 import System.Directory (doesDirectoryExist, doesFileExist,
                          withCurrentDirectory,
+#if !MIN_VERSION_simple_cmd(0,2,4)
 #if MIN_VERSION_directory(1,2,5)
                          listDirectory
 #else
                          getDirectoryContents
 #endif
+#endif
                         )
 import System.Exit (exitFailure)
 import System.FilePath
 
-#if !MIN_VERSION_directory(1,2,5)
+#if !MIN_VERSION_directory(1,2,5) && !MIN_VERSION_simple_cmd(0,2,4)
 listDirectory :: FilePath -> IO [FilePath]
 listDirectory path =
   filter f <$> getDirectoryContents path
@@ -286,10 +288,12 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
                             then Nothing
                             else error' $ f ++ " not found"
 
+#if !MIN_VERSION_simple_cmd(0,2,4)
             filesWithExtension :: FilePath -> String -> IO [FilePath]
             filesWithExtension dir ext =
               map (dir </>) . filter (ext `isExtensionOf`) <$>
               listDirectory dir
+#endif
 
         extractMetadata :: FilePath -> ([String],[String]) -> [String] -> ([String],[String])
         extractMetadata _ acc [] = acc
