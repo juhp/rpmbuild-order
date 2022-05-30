@@ -18,32 +18,32 @@ pkg = ("test/pkgs/" ++)
 
 spec :: Version -> Spec
 spec rpmver = do
-  describe "sorting" $ do
-    it "sort A B" $
+  describe "sort" $ do
+    it "A B" $
       dependencySort [pkg "A", pkg "B"] >>=
       (`shouldBe` [pkg "B", pkg "A"])
 
-    it "sort 1 2" $
+    it "1 2" $
       dependencySort [pkg "1", pkg "2"] >>=
       (`shouldBe` [pkg "2", pkg "1"])
 
-    it "sort A/ B/" $
+    it "A/ B/" $
       dependencySort [pkg "A/", pkg "B/"] >>=
       (`shouldBe` [pkg "B/", pkg "A/"])
 
-    it "sort 1/ 2/" $
+    it "1/ 2/" $
       dependencySort [pkg "1/", pkg "2/"] >>=
       (`shouldBe` [pkg "2/", pkg "1/"])
 
-    it "sort A.spec B.spec" $
+    it "A.spec B.spec" $
       dependencySort [pkg "A/A.spec", pkg "B/B.spec"] >>=
       (`shouldBe` [pkg "B/B.spec", pkg "A/A.spec"])
 
-    it "sort 1.spec 2.spec" $
+    it "1.spec 2.spec" $
       dependencySort [pkg "1/A.spec", pkg "2/B.spec"] >>=
       (`shouldBe` [pkg "2/B.spec", pkg "1/A.spec"])
 
-    it "sort A/ B.spec" $
+    it "A/ B.spec" $
       dependencySort [pkg "A/", pkg "B/B.spec"] >>=
       (`shouldBe` [pkg "B/B.spec", pkg "A/"])
 
@@ -51,12 +51,12 @@ spec rpmver = do
       dependencySort [pkg "A", pkg "B", pkg "C"]
       `shouldThrow` anyException
 
-    it "sort A B D1.0" $
+    it "A B D1.0" $
       dependencySort [pkg "A", pkg "B/", pkg "D1.0"] >>=
       (`shouldBe` [pkg "B/", pkg "D1.0", pkg "A"])
 
     when (rpmver > makeVersion [4,15,0]) $
-      it "sort dynbr A B" $
+      it "dynbr A B" $
       dependencySort [pkg "dynbr/A", pkg "B"] >>=
       (`shouldBe` [pkg "B", pkg "dynbr/A"])
 
@@ -66,12 +66,12 @@ spec rpmver = do
       (`shouldBe` [pkg "C", pkg "B", pkg "A"])
 
   describe "layers" $
-    it "layers A B" $
+    it "A B" $
       dependencyLayers [pkg "A", pkg "B"] >>=
       (`shouldBe` [[pkg "B"], [pkg "A"]])
 
   describe "leaves" $
-    it "leaves A B D" $
+    it "A B D" $
       leafPackages [pkg "A", pkg "B", pkg "D1.0"] >>=
       (`shouldBe` [pkg "A", pkg "D1.0"])
 
