@@ -1,6 +1,6 @@
 # 0.4.6 (2022-05-30)
 - handle Dynamic BuildRequires (#3)
-  with special support for rust and ruby BRs
+  with special support for golang Provs and rust & ruby BRs
 - Graph: new aliases createGraph1 for createGraph',
   createGraph2 for createGraph'', createGraph3 for createGraph''',
   and createGraph4 for createGraph'''' (deprecating the primed names)

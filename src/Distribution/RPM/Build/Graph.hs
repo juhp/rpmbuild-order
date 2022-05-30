@@ -226,12 +226,23 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
         Just (dir,spec) -> do
           when verbose $ warning spec
           withCurrentDirectory dir $ do
-            dynbr <- grep_ "^%generate_buildrequires" spec
+            dynbr <- egrep_ "^\\(%generate_buildrequires\\|%gometa\\)" spec
             mprovbrs <-
               if dynbr
               then do
-                provs <- rpmspecProvides spec
                 brs <- rpmspecDynBuildRequires spec
+                provs <- do
+                  dynprovs <-
+                    if "golang-" `isPrefixOf` takeBaseName spec
+                    then do
+                      macro <- grep "%global goipath" spec
+                      return $
+                        case macro of
+                          [def] -> ["golang(" ++ last (words def) ++ ")"]
+                          _ -> error' $ "failed to find %goipath in " ++ spec
+                    else return []
+                  prs <- rpmspecProvides spec
+                  return $ dynprovs ++ prs
                 return $ Just (provs,brs)
               else do
                 mcontent <- rpmspecParse spec
