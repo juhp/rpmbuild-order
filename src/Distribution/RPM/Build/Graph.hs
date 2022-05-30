@@ -271,7 +271,7 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
                     else do
                     specs <- filesWithExtension dir ".spec"
                     case specs of
-                      [spec] -> return $ Just spec
+                      [spec] -> return $ Just $ dir </> spec
                       _ -> if lenient then return Nothing
                            else error' $
                                 if null specs
@@ -291,8 +291,7 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
 #if !MIN_VERSION_simple_cmd(0,2,4)
             filesWithExtension :: FilePath -> String -> IO [FilePath]
             filesWithExtension dir ext =
-              map (dir </>) . filter (ext `isExtensionOf`) <$>
-              listDirectory dir
+              filter (ext `isExtensionOf`) <$> listDirectory dir
 #endif
 
         extractMetadata :: FilePath -> ([String],[String]) -> [String] -> ([String],[String])
