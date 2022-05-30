@@ -23,10 +23,9 @@ Description:
   which can affect dependencies. It can also output dependency graphs.
 
   Since version 0.4, a library API is also provided.
-Tested-with:       GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,
-                   GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2,
+Tested-with:       GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2,
                    GHC == 8.4.4, GHC == 8.6.5, GHC == 8.8.4,
-                   GHC == 8.10.4, GHC == 9.0.1
+                   GHC == 8.10.7, GHC == 9.0.2
 Cabal-Version:     1.18
 Build-Type:        Simple
 Extra-doc-files:    README.md TODO ChangeLog.md

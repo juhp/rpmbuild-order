@@ -5,7 +5,7 @@
 # rpmbuild-order
 
 This is a tool to sort RPM source packages in build dependency order.
-This code is originally derived from
+The code was originally derived from
 [cabal-sort](http://hackage.haskell.org/package/cabal-sort)
 by Henning Thielemann.
 
@@ -45,23 +45,26 @@ Please see the documentation for more details.
 1. Given packages A, B, C, where C depends on B, and B depends on A,
 and you call
 
-    rpmbuild-order sort C.spec A.spec
+       rpmbuild-order sort C.spec A.spec
 
-then the output may be wrong if C does not have a direct dependency on A.
-Even if the order is correct, B is missing in the output
-and thus in this case the list of packages cannot be reliably used
-for a sequence of builds.
+   then the output may be wrong if C does not have a direct dependency on A.
+   Even if the order is correct, B is missing in the output
+   and thus in this case the list of packages cannot be reliably used
+   for a sequence of builds.
 
-However the `deps` and `rdeps` commands take
-other neighbouring package directories into account.
+   However the `deps` and `rdeps` commands take
+   other neighbouring package directories into account.
 
 2. repoquery is not used to resolve meta-dependencies or files to packages.
 So if a package BuildRequires a file, it will not be resolved to a package.
-This may get addressed some day, but file dependencies seem less common for
-BuildRequires than Requires.
+This may get addressed some day, but file dependencies seem uncommon for
+BuildRequires compared to Requires.
 
 3. rpmspec is used to parse spec files (for macro expansion etc):
 so missing macros packages can lead to erroneous results in some cases.
+
+4. Since version 0.4.6 there is some support now for packages using
+dynamic buildrequires (in Fedora: golang, python, ruby, and rust packages).
 
 ## Installation
 
