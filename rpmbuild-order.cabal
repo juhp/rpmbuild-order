@@ -108,4 +108,4 @@ test-suite test
                  , rpmbuild-order
                  , simple-cmd
                  , unix
-    build-tools:   rpmbuild-order
+    build-tool-depends: rpmbuild-order:rpmbuild-order
