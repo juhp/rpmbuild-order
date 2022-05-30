@@ -6,7 +6,7 @@ Author:           Jens Petersen <petersen@redhat.com>,
                   Henning Thielemann <haskell@henning-thielemann.de>
 Maintainer:       Jens Petersen <petersen@redhat.com>
 Copyright:        2010-2018  Henning Thielemann,
-                  2018-2021 Jens Petersen <petersen@redhat.com>
+                  2018-2022 Jens Petersen <petersen@redhat.com>
 Category:         Distribution
 Homepage:         https://github.com/juhp/rpmbuild-order
 Bug-reports:      https://github.com/juhp/rpmbuild-order/issues

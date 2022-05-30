@@ -1,4 +1,4 @@
-# 0.4.6 (2022-02-XX)
+# 0.4.6 (2022-05-30)
 - handle Dynamic BuildRequires (#3)
   with special support for rust and ruby BRs
 - Graph: new aliases createGraph1 for createGraph',

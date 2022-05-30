@@ -1,8 +1,8 @@
 - --quiet to silence rpmspec warnings
 - use record to set createGraph options
 
-- try topograph
-- use Set?
+- try topograph or agl
+- use Data.Set
 * warn about uninstalled (specific?) macros packages
 - handle duplicate packages?
 - (r)deps: optimize using actual deps
