@@ -1,5 +1,5 @@
 Name:             rpmbuild-order
-Version:          0.4.6
+Version:          0.4.6.1
 License:          BSD3
 License-File:     LICENSE
 Author:           Jens Petersen <petersen@redhat.com>,
@@ -34,6 +34,7 @@ Extra-source-files: rpmbuild-order.1
                     test/pkgs/B/B.spec
                     test/pkgs/C/C.spec
                     test/pkgs/D1.0/D1.0.spec
+                    test/pkgs/dynbr/A/A.spec
 
 source-repository head
   type:     git
