@@ -49,7 +49,7 @@ import Data.List.Extra
 import Data.GraphViz
 import SimpleCmd
 import System.Directory (doesDirectoryExist, doesFileExist,
-                         withCurrentDirectory,
+                         getCurrentDirectory, withCurrentDirectory,
 #if !MIN_VERSION_simple_cmd(0,2,4)
 #if MIN_VERSION_directory(1,2,5)
                          listDirectory
@@ -60,6 +60,7 @@ import System.Directory (doesDirectoryExist, doesFileExist,
                         )
 import System.Exit (exitFailure)
 import System.FilePath
+import System.IO.Extra (withTempDir)
 
 #if !MIN_VERSION_directory(1,2,5) && !MIN_VERSION_simple_cmd(0,2,4)
 listDirectory :: FilePath -> IO [FilePath]
@@ -403,11 +404,12 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
 
     rpmspecDynBuildRequires :: FilePath -> IO [String]
     rpmspecDynBuildRequires spec = do
-      (out,err) <- cmdStdErr "rpmbuild" ["-br", "--nodeps", spec]
-      unless (null err) $
-        when verbose $ warning err
-      -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
-      cmdLines "rpm" ["-qp", "--requires", last (words out)]
+      cwd <- getCurrentDirectory
+      withTempDir $ \tmpdir -> do
+        (out,err) <- cmdStdErr "rpmbuild" ["-br", "--nodeps", "--define", "_srcrpmdir " ++ tmpdir, cwd </> spec]
+        unless (null err) $ when verbose $ warning err
+        -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
+        cmdLines "rpm" ["-qp", "--requires", last (words out)]
 
     simplifyDep br =
       case (head . words) br of
