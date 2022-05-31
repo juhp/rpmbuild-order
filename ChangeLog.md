@@ -1,3 +1,6 @@
+# 0.4.7 (2022-05-31)
+- Graph rpmspecDynBuildRequires: generate .buildreqs.nosrc.rpm in a tmpdir
+
 # 0.4.6 (2022-05-30)
 - handle Dynamic BuildRequires (#3)
   with special support for golang Provs and rust & ruby BRs
