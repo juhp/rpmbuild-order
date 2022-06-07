@@ -389,7 +389,7 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
     rpmspecParse :: FilePath -> IO (Maybe String)
     rpmspecParse spec = do
       (ok, out, err) <- cmdFull "rpmspec" (["-P", "--define", "ghc_version any"] ++ rpmopts ++ [spec]) ""
-      unless (null err) $ warning err
+      unless (null err) $ warning $ spec +-+ err
       if ok
         then return $ Just out
         else if lenient then return Nothing else exitFailure
