@@ -66,6 +66,8 @@ so missing macros packages can lead to erroneous results in some cases.
 4. Since version 0.4.6 there is some support now for packages using
 dynamic buildrequires (in Fedora: golang, python, ruby, and rust packages).
 
+5. Since version 0.4.8 %{_isa} suffixed Provides are filtered out for x86_64.
+
 ## Installation
 
 rpmbuild-order is packaged in Fedora Linux.

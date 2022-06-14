@@ -1,5 +1,6 @@
 # 0.4.8 (2022-06-14)
 - Graph createGraph4: prepend spec name to any rpmspec stderr
+- Graph optimization: filter out Provides ending in (x86-64)
 
 # 0.4.7 (2022-05-31)
 - Graph rpmspecDynBuildRequires: generate .buildreqs.nosrc.rpm in a tmpdir

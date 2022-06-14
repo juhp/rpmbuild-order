@@ -255,11 +255,13 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
             case mprovbrs of
               Nothing -> return Nothing
               Just (provs,brs) -> do
+                -- FIXME do not hardcode arch
+                let provs' = filter (not . ("(x86-64)" `isSuffixOf`)) provs
                 when verbose $ do
-                  warning $ show $ sort provs
+                  warning $ show $ sort provs'
                   warning $ show $ mapMaybe simplifyDep $ sort brs
                 return $ Just (path,
-                               nub provs, -- FIXME filter 'name(arch)'
+                               nub provs',
                                nub (mapMaybe simplifyDep brs) \\ ignoredBRs)
       where
         -- (dir,specfile)
