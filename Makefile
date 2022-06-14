@@ -6,4 +6,4 @@ build:
 	LANG=C help2man -N $(NAME) > $(NAME).1
 
 copy:
-	cp -p dist/$(NAME)-$(VERSION).tar.gz ~/fedora/haskell/hackage/$(NAME)/
+	cp -p .hkgr/$(NAME)-$(VERSION).tar.gz ~/fedora/haskell/hackage/$(NAME)/
