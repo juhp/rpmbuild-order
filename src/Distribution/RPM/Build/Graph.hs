@@ -128,6 +128,8 @@ createGraph1 :: Bool -- ^ verbose
 createGraph1 = createGraph2 []
 
 -- | Alias for createGraph1
+--
+-- deprecated
 createGraph' :: Bool -- ^ verbose
              -> Bool -- ^ lenient (skip rpmspec failures)
              -> Bool -- ^ reverse dependency graph
