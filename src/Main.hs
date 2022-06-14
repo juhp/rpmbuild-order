@@ -18,9 +18,6 @@ import Data.Graph.Inductive.Query.DFS (components)
 import Data.List (intercalate)
 import Data.List.Extra (dropSuffix)
 
-#if !MIN_VERSION_simple_cmd_args(0,1,4)
-import Options.Applicative (str)
-#endif
 import SimpleCmdArgs
 import System.Directory (doesDirectoryExist,
 #if MIN_VERSION_directory(1,2,5)
