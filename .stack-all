@@ -1,5 +1,5 @@
 [versions]
 # nightly missing graphviz
 newest = lts-19
-# lts11 filepath missing isExtensionOf
-oldest = lts-12
+# lts9 too old
+oldest = lts-10

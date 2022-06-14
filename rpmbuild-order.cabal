@@ -73,7 +73,7 @@ Library
                  case-insensitive,
                  directory,
                  extra >= 1.6.4,
-                 filepath >= 1.4.2,
+                 filepath,
                  fgl >= 5.5.4,
                  graphviz,
                  simple-cmd >= 0.2.3

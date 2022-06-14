@@ -497,3 +497,9 @@ renderGraph graph = do
     let g = G.emap (const ("" :: String)) graph
     runGraphvizCanvas' (setDirectedness graphToDot quickParams g) Xlib
     else error' "please install graphviz first"
+
+#if !MIN_VERSION_filepath(1,4,2)
+isExtensionOf :: String -> FilePath -> Bool
+isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
+isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
+#endif
