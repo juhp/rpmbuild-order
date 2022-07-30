@@ -413,7 +413,9 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
         (out,err) <- cmdStdErr "rpmbuild" ["-br", "--nodeps", "--define", "_srcrpmdir " ++ tmpdir, cwd </> spec]
         unless (null err) $ when verbose $ warning err
         -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
-        cmdLines "rpm" ["-qp", "--requires", last (words out)]
+        case words out of
+          [] -> error' $ spec +-+ "could not generate source rpm for dynamic buildrequires"
+          ws -> cmdLines "rpm" ["-qp", "--requires", last ws]
 
     simplifyDep br =
       case (head . words) br of
