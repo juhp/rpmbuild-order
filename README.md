@@ -11,10 +11,32 @@ by Henning Thielemann.
 
 ## Usage
 
-    $ rpmbuild-order --help
-    :
-    $ rpmbuild-order sort mycore mylib myapp
-    mylib mycore myapp
+```
+$ rpmbuild-order --version
+0.4.9
+$ rpmbuild-order --help
+Order packages by build dependencies
+
+Usage: rpmbuild-order [--version] COMMAND
+  Sort package sources (spec files) in build dependency order
+
+Available options:
+  -h,--help                Show this help text
+  --version                Show version
+
+Available commands:
+  sort                     sort packages
+  deps                     sort dependencies in neighbouring package dirs
+  rdeps                    sort dependents in neighbouring package dirs
+  layers                   ordered output of dependency layers
+  chain                    ordered output suitable for a chain-build
+  leaves                   List of the top leaves of package graph
+  roots                    List lowest root packages
+  render                   Show graph with graphviz
+
+$ rpmbuild-order sort mycore mylib myapp
+mylib mycore myapp
+```
 
 The arguments passed can either be directories containing the package
 or spec files.
@@ -25,21 +47,25 @@ a list of cycles and any shortest path subcycles.
 Using the rpmbuild-order `deps` and `rdeps` commands the ordered
 dependencies and reverse dependencies of a package can be obtained
 within the current set of checked out package sources.
+ie If you have a directory with packages:
+`pkg1/ pkg2/ lib1/ lib2/ lib3/ misc1/`
+then the output of `rpmbuild-order deps pkg1` might be `lib1 lib3 pkg1`
+for example.
 
 The `render` command displays a graph of package dependencies
-using graphviz and X11 or optionally instead prints the dot format to stdout.
+using graphviz and X11 or can print the dot format to stdout.
 
 ## Library
 As of version 0.4, a library is also provided.
 
 There are two modules:
 
+- `Distribution.RPM.Build.Order` provides higher level functions for
+  sorting packages in build dependency orders and output. It is built on top of:
 - `Distribution.RPM.Build.Graph` provides lower level functions for generating
   RPM dependency graphs
-- `Distribution.RPM.Build.Order` provides higher level functions for
-  sorting packages in build dependency orders and output.
 
-Please see the documentation for more details.
+Please see their documentation for more details.
 
 ## Notes and known problems
 1. Given packages A, B, C, where C depends on B, and B depends on A,
@@ -74,4 +100,4 @@ rpmbuild-order is packaged in Fedora Linux.
 
 ## Building from source
 
-Use `cabal-rpm builddep && cabal-install` or `stack install`.
+Use `cabal-rpm builddep && cabal install` or `stack install`.
