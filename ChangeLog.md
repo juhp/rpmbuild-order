@@ -1,3 +1,7 @@
+# 0.4.9 (2022-08-XX)
+- Graph rpmspecDynBuildRequires: error if no srpm generated
+- Order: add depsPackages and factor out depsGraph to Graph
+
 # 0.4.8 (2022-06-14)
 - Graph createGraph4: prepend spec name to any rpmspec stderr
 - Graph optimization: filter out Provides ending in (x86-64)

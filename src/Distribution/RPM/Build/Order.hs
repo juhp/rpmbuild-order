@@ -73,7 +73,7 @@ independentPackages pkgs = do
 -- | Used to control the output from sortGraph
 data Components = Parallel -- ^ separate independent stacks
                 | Combine -- ^ combine indepdendent stacks together
-                | Connected -- ^ only stack of pacakges
+                | Connected -- ^ only stack of packages
                 | Separate -- ^ only independent packages in the package set
 
 -- | output sorted packages from a PackageGraph arrange by Components
@@ -89,7 +89,20 @@ sortGraph opt graph =
       intercalate "\n\n" $ map (unwords . topsort' . subgraph' graph) $ filter ((>1) . length) (components graph)
     Separate -> unlines $ separatePackages graph
 
-depsPackages :: Bool -> [String] -> Bool-> [String] -> [String] -> Bool ->  Bool -> Maybe FilePath -> [FilePath] -> IO ()
+-- | Given a list of one or more packages, look for dependencies
+-- in neighboring packages and output them in a topological order
+--
+-- @since 0.4.9
+depsPackages :: Bool -- ^ whether to look for reverse dependencies
+             -> [String] -- ^ rpm options
+             -> Bool -- ^ verbose output
+             -> [String] -- ^ packages to exclude
+             -> [String] -- ^ buildrequires to ignore
+             -> Bool -- ^ allow rpmspec failures
+             -> Bool -- ^ parallel output
+             -> Maybe FilePath -- ^ subdir for packages
+             -> [FilePath] -- ^ list of package paths
+             -> IO ()
 depsPackages rev rpmopts verbose excludedPkgs ignoredBRs lenient parallel mdir pkgs =
   depsGraph rev rpmopts verbose excludedPkgs ignoredBRs lenient mdir pkgs >>=
   sortGraph (if parallel then Parallel else Combine)

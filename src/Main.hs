@@ -30,9 +30,9 @@ main =
   subcommands
   [ Subcommand "sort" "sort packages" $
     sortPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> componentsOpt <*> subdirOpt <*> pkgArgs
-  , Subcommand "deps" "sort dependencies" $
+  , Subcommand "deps" "sort dependencies in neighbouring package dirs" $
     depsPackages False <$> rpmOpts <*> verboseOpt <*> excludeOpts <*> ignoredBRopts <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
-  , Subcommand "rdeps" "sort dependents" $
+  , Subcommand "rdeps" "sort dependents in neighbouring package dirs" $
     depsPackages True <$> rpmOpts <*> verboseOpt <*> excludeOpts <*> ignoredBRopts <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "layers" "ordered output of dependency layers" $
     layerPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs

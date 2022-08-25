@@ -18,11 +18,12 @@ Description:
   build dependencies. The code evolved from cabal-sort by Henning Thielemann.
   It can also order the dependencies or reverse depends of one or more packages
   among the packages checked out in neighboring directories (which can be
-  useful to see what packages are affected when a low-level package changes).
+  useful to see what packages are affected when a low-level package changes,
+  or which packages are dependents of one of more packages).
   It also has support for setting RPM options for bcond etc,
   which can affect dependencies. It can also output dependency graphs.
 
-  Since version 0.4, a library API is also provided.
+  Since version 0.4, a library API is provided.
 Tested-with:       GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2,
                    GHC == 8.4.4, GHC == 8.6.5, GHC == 8.8.4,
                    GHC == 8.10.7, GHC == 9.0.2

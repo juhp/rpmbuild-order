@@ -509,7 +509,19 @@ isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
 isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
 #endif
 
-depsGraph :: Bool -> [String] -> Bool-> [String] -> [String] ->  Bool -> Maybe FilePath -> [FilePath] -> IO PackageGraph
+-- | Given a list of one or more packages, look for dependencies
+-- in neighboring packages and return a package dependency graph
+--
+-- @since 0.4.9
+depsGraph :: Bool -- ^ whether to look for reverse dependencies
+          -> [String] -- ^ rpm options
+          -> Bool -- ^ verbose output
+          -> [String] -- ^ packages to exclude
+          -> [String] -- ^ buildrequires to ignore
+          -> Bool -- ^ allow rpmspec failures
+          -> Maybe FilePath -- ^ subdir for packages
+          -> [FilePath] -- ^ list of package paths
+          -> IO PackageGraph -- ^ dependency graph of the packages
 depsGraph rev rpmopts verbose excludedPkgs ignoredBRs lenient mdir pkgs = do
   unlessM (and <$> mapM doesDirectoryExist pkgs) $
     errorWithoutStackTrace "Please use package directory paths"
