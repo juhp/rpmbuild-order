@@ -307,6 +307,12 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
             filesWithExtension :: FilePath -> String -> IO [FilePath]
             filesWithExtension dir ext =
               filter (ext `isExtensionOf`) <$> listDirectory dir
+
+#if !MIN_VERSION_filepath(1,4,2)
+            isExtensionOf :: String -> FilePath -> Bool
+            isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
+            isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
+#endif
 #endif
 
         extractMetadata :: FilePath -> ([String],[String]) -> [String] -> ([String],[String])
@@ -502,12 +508,6 @@ renderGraph graph = do
     let g = G.emap (const ("" :: String)) graph
     runGraphvizCanvas' (setDirectedness graphToDot quickParams g) Xlib
     else error' "please install graphviz first"
-
-#if !MIN_VERSION_filepath(1,4,2)
-isExtensionOf :: String -> FilePath -> Bool
-isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
-isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
-#endif
 
 -- | Given a list of one or more packages, look for dependencies
 -- in neighboring packages and return a package dependency graph
