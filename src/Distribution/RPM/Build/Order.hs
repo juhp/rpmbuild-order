@@ -23,14 +23,23 @@ module Distribution.RPM.Build.Order
    leafPackages,
    independentPackages,
    Components (..),
-   sortGraph)
+   sortGraph,
+   depsPackages)
 where
 
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
+import Control.Monad.Extra
 import Data.List (intercalate)
 import Data.Graph.Inductive.Query.DFS (topsort', components)
+import System.Directory (doesDirectoryExist,
+#if MIN_VERSION_directory(1,2,5)
+                         listDirectory
+#else
+                         getDirectoryContents
+#endif
+  )
 
 import Distribution.RPM.Build.Graph
 
@@ -87,3 +96,21 @@ sortGraph opt graph =
     Connected ->
       intercalate "\n\n" $ map (unwords . topsort' . subgraph' graph) $ filter ((>1) . length) (components graph)
     Separate -> unlines $ separatePackages graph
+
+depsPackages :: Bool -> [String] -> Bool-> [String] -> [String] -> Bool ->  Bool -> Maybe FilePath -> [FilePath] -> IO ()
+depsPackages rev rpmopts verbose excludedPkgs ignoredBRs lenient parallel mdir pkgs = do
+  unlessM (and <$> mapM doesDirectoryExist pkgs) $
+    errorWithoutStackTrace "Please use package directory paths"
+  listDirectory "." >>=
+    -- filter out dotfiles
+    createGraph3 ignoredBRs rpmopts verbose lenient (not rev) mdir . filter ((/= '.') . head) . filter (`notElem` excludedPkgs) >>=
+    createGraph2 rpmopts verbose lenient True mdir . dependencyNodes pkgs >>=
+    sortGraph (if parallel then Parallel else Combine)
+
+#if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,5))
+#else
+listDirectory :: FilePath -> IO [FilePath]
+listDirectory path =
+  filter f <$> getDirectoryContents path
+  where f filename = filename /= "." && filename /= ".."
+#endif
