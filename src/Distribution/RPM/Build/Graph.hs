@@ -31,7 +31,8 @@ module Distribution.RPM.Build.Graph
    packageLeaves,
    separatePackages,
    printGraph,
-   renderGraph
+   renderGraph,
+   depsGraph
   ) where
 
 import qualified Data.CaseInsensitive as CI
@@ -43,26 +44,24 @@ import qualified Data.Graph.Inductive.Graph as G
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
-import Control.Monad (forM_, guard, when, unless)
+import Control.Monad.Extra (forM_, guard, when, unless, unlessM)
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import Data.List.Extra
 import Data.GraphViz
 import SimpleCmd
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getCurrentDirectory, withCurrentDirectory,
-#if !MIN_VERSION_simple_cmd(0,2,4)
 #if MIN_VERSION_directory(1,2,5)
                          listDirectory
 #else
                          getDirectoryContents
-#endif
 #endif
                         )
 import System.Exit (exitFailure)
 import System.FilePath
 import System.IO.Extra (withTempDir)
 
-#if !MIN_VERSION_directory(1,2,5) && !MIN_VERSION_simple_cmd(0,2,4)
+#if !MIN_VERSION_directory(1,2,5)
 listDirectory :: FilePath -> IO [FilePath]
 listDirectory path =
   filter f <$> getDirectoryContents path
@@ -509,3 +508,12 @@ isExtensionOf :: String -> FilePath -> Bool
 isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
 isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
 #endif
+
+depsGraph :: Bool -> [String] -> Bool-> [String] -> [String] ->  Bool -> Maybe FilePath -> [FilePath] -> IO PackageGraph
+depsGraph rev rpmopts verbose excludedPkgs ignoredBRs lenient mdir pkgs = do
+  unlessM (and <$> mapM doesDirectoryExist pkgs) $
+    errorWithoutStackTrace "Please use package directory paths"
+  listDirectory "." >>=
+    -- filter out dotfiles
+    createGraph3 ignoredBRs rpmopts verbose lenient (not rev) mdir . filter ((/= '.') . head) . filter (`notElem` excludedPkgs) >>=
+    createGraph2 rpmopts verbose lenient True mdir . dependencyNodes pkgs
