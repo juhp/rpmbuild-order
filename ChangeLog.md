@@ -1,4 +1,4 @@
-# 0.4.9 (2022-08-XX)
+# 0.4.9 (2022-08-25)
 - Graph rpmspecDynBuildRequires: error if no srpm generated
 - Order: add depsPackages and factor out depsGraph to Graph
 
