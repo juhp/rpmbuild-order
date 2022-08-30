@@ -4,6 +4,7 @@ import Data.Version.Extra
 --import Distribution.RPM.Build.Graph
 import Distribution.RPM.Build.Order
 import SimpleCmd
+import System.Directory (withCurrentDirectory)
 import System.Posix.Files
 
 main :: IO ()
@@ -79,6 +80,13 @@ spec rpmver = do
     it "sort A B" $
       cmd "rpmbuild-order" ["sort", pkg "A", pkg "B"] >>=
       (`shouldBe` unwords [pkg "B", pkg "A"])
+
+    it "deps A" $
+      withCurrentDirectory "test/pkgs" $
+      cmd "rpmbuild-order"
+      ["deps", "-x", "dynbr", "-x", "1", "-x", "2", "-x", "C", "A"] >>=
+      (`shouldBe` unwords ["B", "A"])
+
 
 setupSymlinks :: IO ()
 setupSymlinks =
