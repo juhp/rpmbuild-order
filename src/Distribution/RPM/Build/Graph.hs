@@ -33,6 +33,7 @@ module Distribution.RPM.Build.Graph
    printGraph,
    renderGraph,
    depsGraph,
+   depsGraphDeps,
    Components (..),
    topsortGraph,
   ) where
@@ -524,12 +525,29 @@ depsGraph :: Bool -- ^ whether to look for reverse dependencies
           -> Maybe FilePath -- ^ subdir for packages
           -> [FilePath] -- ^ list of package paths
           -> IO PackageGraph -- ^ dependency graph of the packages
-depsGraph rev rpmopts verbose excludedPkgs ignoredBRs lenient mdir pkgs = do
+depsGraph rev rpmopts verbose excludedPkgs ignoredBRs lenient mdir pkgs =
+  listDirectory "." >>=
+  depsGraphDeps rev rpmopts verbose excludedPkgs ignoredBRs lenient mdir pkgs
+
+-- | Given a list of one or more packages and a list of potential dependencies,
+-- return a package dependency graph
+--
+-- @since 0.4.10
+depsGraphDeps :: Bool -- ^ whether to look for reverse dependencies
+             -> [String] -- ^ rpm options
+             -> Bool -- ^ verbose output
+             -> [String] -- ^ packages to exclude
+             -> [String] -- ^ buildrequires to ignore
+             -> Bool -- ^ allow rpmspec failures
+             -> Maybe FilePath -- ^ subdir for packages
+             -> [FilePath] -- ^ list of package paths
+             -> [FilePath] -- ^ list of potential dependency paths
+             -> IO PackageGraph -- ^ dependency graph of the packages
+depsGraphDeps rev rpmopts verbose excludedPkgs ignoredBRs lenient mdir pkgs deps = do
   unlessM (and <$> mapM doesDirectoryExist pkgs) $
     errorWithoutStackTrace "Please use package directory paths"
-  listDirectory "." >>=
-    -- filter out dotfiles
-    createGraph3 ignoredBRs rpmopts verbose lenient (not rev) mdir . filter ((/= '.') . head) . filter (`notElem` excludedPkgs) >>=
+  -- filter out dotfiles
+  createGraph3 ignoredBRs rpmopts verbose lenient (not rev) mdir (filter ((/= '.') . head) (filter (`notElem` excludedPkgs) deps)) >>=
     createGraph2 rpmopts verbose lenient True mdir . dependencyNodes pkgs
 
 -- | Used to control the output from sortGraph
