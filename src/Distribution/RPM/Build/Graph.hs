@@ -32,11 +32,13 @@ module Distribution.RPM.Build.Graph
    separatePackages,
    printGraph,
    renderGraph,
-   depsGraph
+   depsGraph,
+   Components (..),
+   topsortGraph,
   ) where
 
 import qualified Data.CaseInsensitive as CI
-import Data.Graph.Inductive.Query.DFS (scc, xdfsWith)
+import Data.Graph.Inductive.Query.DFS (components, scc, topsort', xdfsWith)
 import Data.Graph.Inductive.Query.SP (sp)
 import Data.Graph.Inductive.PatriciaTree (Gr)
 import qualified Data.Graph.Inductive.Graph as G
@@ -529,3 +531,21 @@ depsGraph rev rpmopts verbose excludedPkgs ignoredBRs lenient mdir pkgs = do
     -- filter out dotfiles
     createGraph3 ignoredBRs rpmopts verbose lenient (not rev) mdir . filter ((/= '.') . head) . filter (`notElem` excludedPkgs) >>=
     createGraph2 rpmopts verbose lenient True mdir . dependencyNodes pkgs
+
+-- | Used to control the output from sortGraph
+data Components = Parallel -- ^ separate independent stacks
+                | Combine -- ^ combine indepdendent stacks together
+                | Connected -- ^ only stack of packages
+                | Separate -- ^ only independent packages in the package set
+
+-- | topological sort packages from a PackageGraph arranged by Components
+--
+-- @since 0.4.10
+topsortGraph :: Components -> PackageGraph -> [[String]]
+topsortGraph opt graph =
+  case opt of
+    Parallel -> map (topsort' . subgraph' graph) (components graph)
+    Combine -> pure $ topsort' graph
+    Connected ->
+      map (topsort' . subgraph' graph) $ filter ((>1) . length) (components graph)
+    Separate -> pure $ separatePackages graph

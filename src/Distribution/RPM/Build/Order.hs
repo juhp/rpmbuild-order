@@ -30,7 +30,7 @@ where
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
-import Data.List (intercalate)
+import Data.List (intersperse)
 import Data.Graph.Inductive.Query.DFS (topsort', components)
 
 import Distribution.RPM.Build.Graph
@@ -70,24 +70,16 @@ independentPackages pkgs = do
   graph <- createGraph pkgs
   return $ separatePackages graph
 
--- | Used to control the output from sortGraph
-data Components = Parallel -- ^ separate independent stacks
-                | Combine -- ^ combine indepdendent stacks together
-                | Connected -- ^ only stack of packages
-                | Separate -- ^ only independent packages in the package set
-
 -- | output sorted packages from a PackageGraph arrange by Components
 sortGraph :: Components -> PackageGraph -> IO ()
 sortGraph opt graph =
-  -- FIXME output list(s) instead
-  putStrLn $
+  mapM_ (putStrLn . unwords) $
   case opt of
-    Parallel ->
-      intercalate "\n\n" $ map (unwords . topsort' . subgraph' graph) (components graph)
-    Combine -> (unwords . topsort') graph
-    Connected ->
-      intercalate "\n\n" $ map (unwords . topsort' . subgraph' graph) $ filter ((>1) . length) (components graph)
-    Separate -> unlines $ separatePackages graph
+    Parallel -> intersperse ["\n"]
+    Combine -> id
+    Connected -> intersperse ["\n"]
+    Separate -> id
+  $ topsortGraph opt graph
 
 -- | Given a list of one or more packages, look for dependencies
 -- in neighboring packages and output them in a topological order
