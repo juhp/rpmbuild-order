@@ -13,7 +13,7 @@ by Henning Thielemann.
 
 ```
 $ rpmbuild-order --version
-0.4.9
+0.4.10
 $ rpmbuild-order --help
 Order packages by build dependencies
 

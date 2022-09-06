@@ -1,3 +1,8 @@
+# 0.4.10 (2022-10-28)
+- Graph: add depsGraphDeps which takes a list of possible deps
+- Graph: add topsortGraph (factored out of sortGraph)
+- tests: add testcase for deps command
+
 # 0.4.9 (2022-08-25)
 - Graph rpmspecDynBuildRequires: error if no srpm generated
 - Order: add depsPackages and factor out depsGraph to Graph

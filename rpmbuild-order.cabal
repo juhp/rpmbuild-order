@@ -1,5 +1,5 @@
 Name:             rpmbuild-order
-Version:          0.4.9
+Version:          0.4.10
 License:          BSD3
 License-File:     LICENSE
 Author:           Jens Petersen <petersen@redhat.com>,
