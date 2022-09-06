@@ -54,22 +54,11 @@ import Data.GraphViz
 import SimpleCmd
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getCurrentDirectory, withCurrentDirectory,
-#if MIN_VERSION_directory(1,2,5)
                          listDirectory
-#else
-                         getDirectoryContents
-#endif
                         )
 import System.Exit (exitFailure)
 import System.FilePath
 import System.IO.Extra (withTempDir)
-
-#if !MIN_VERSION_directory(1,2,5)
-listDirectory :: FilePath -> IO [FilePath]
-listDirectory path =
-  filter f <$> getDirectoryContents path
-  where f filename = filename /= "." && filename /= ".."
-#endif
 
 data SourcePackage =
   SourcePackage {
@@ -305,18 +294,6 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
                        else if may
                             then Nothing
                             else error' $ f ++ " not found"
-
-#if !MIN_VERSION_simple_cmd(0,2,4)
-            filesWithExtension :: FilePath -> String -> IO [FilePath]
-            filesWithExtension dir ext =
-              filter (ext `isExtensionOf`) <$> listDirectory dir
-
-#if !MIN_VERSION_filepath(1,4,2)
-            isExtensionOf :: String -> FilePath -> Bool
-            isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
-            isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
-#endif
-#endif
 
         extractMetadata :: FilePath -> ([String],[String]) -> [String] -> ([String],[String])
         extractMetadata _ acc [] = acc
@@ -567,3 +544,15 @@ topsortGraph opt graph =
     Connected ->
       map (topsort' . subgraph' graph) $ filter ((>1) . length) (components graph)
     Separate -> pure $ separatePackages graph
+
+#if !MIN_VERSION_simple_cmd(0,2,4)
+filesWithExtension :: FilePath -> String -> IO [FilePath]
+filesWithExtension dir ext =
+  filter (ext `isExtensionOf`) <$> listDirectory dir
+
+#if !MIN_VERSION_filepath(1,4,2)
+isExtensionOf :: String -> FilePath -> Bool
+isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
+isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
+#endif
+#endif
