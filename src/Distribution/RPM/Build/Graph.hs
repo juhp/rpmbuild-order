@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 {-|
 This module provides simple dependency graph making for rpm packages:
@@ -38,7 +37,6 @@ module Distribution.RPM.Build.Graph
    topsortGraph,
   ) where
 
-import qualified Data.CaseInsensitive as CI
 import Data.Graph.Inductive.Query.DFS (components, scc, topsort', xdfsWith)
 import Data.Graph.Inductive.Query.SP (sp)
 import Data.Graph.Inductive.PatriciaTree (Gr)
@@ -53,12 +51,10 @@ import Data.List.Extra
 import Data.GraphViz
 import SimpleCmd
 import System.Directory (doesDirectoryExist, doesFileExist,
-                         getCurrentDirectory, withCurrentDirectory,
-                         listDirectory
-                        )
-import System.Exit (exitFailure)
+                         withCurrentDirectory, listDirectory)
 import System.FilePath
-import System.IO.Extra (withTempDir)
+
+import Distribution.RPM.Build.ProvReqs (rpmspecProvidesBuildRequires)
 
 data SourcePackage =
   SourcePackage {
@@ -220,31 +216,7 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
         Just (dir,spec) -> do
           when verbose $ warning spec
           withCurrentDirectory dir $ do
-            dynbr <- egrep_ "^\\(%generate_buildrequires\\|%gometa\\)" spec
-            mprovbrs <-
-              if dynbr
-              then do
-                brs <- rpmspecDynBuildRequires spec
-                provs <- do
-                  dynprovs <-
-                    if "golang-" `isPrefixOf` takeBaseName spec
-                    then do
-                      macro <- grep "%global goipath" spec
-                      return $
-                        case macro of
-                          [def] -> ["golang(" ++ last (words def) ++ ")"]
-                          _ -> error' $ "failed to find %goipath in " ++ spec
-                    else return []
-                  prs <- rpmspecProvides spec
-                  return $ dynprovs ++ prs
-                return $ Just (provs,brs)
-              else do
-                mcontent <- rpmspecParse spec
-                return $ case mcontent of
-                           Nothing -> Nothing
-                           Just content ->
-                             let pkg = takeBaseName spec
-                             in Just $ extractMetadata pkg ([],[]) $ lines content
+            mprovbrs <- rpmspecProvidesBuildRequires lenient rpmopts spec
             case mprovbrs of
               Nothing -> return Nothing
               Just (provs,brs) -> do
@@ -294,27 +266,6 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
                        else if may
                             then Nothing
                             else error' $ f ++ " not found"
-
-        extractMetadata :: FilePath -> ([String],[String]) -> [String] -> ([String],[String])
-        extractMetadata _ acc [] = acc
-        extractMetadata pkg acc@(provs,brs) (l:ls) =
-          let ws = words l in
-            if length ws < 2 then extractMetadata pkg acc ls
-            else case CI.mk (head ws) of
-              "BuildRequires:" ->
-                let br = (head . tail) ws
-                    brs' = if br `elem` ignoredBRs then brs else br:brs
-                in extractMetadata pkg (provs, brs') ls
-              "Name:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
-              "Provides:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
-              "%package" ->
-                let subpkg =
-                      let sub = last ws in
-                        if length ws == 2
-                        then pkg ++ '-' : sub
-                        else sub
-                in extractMetadata pkg (subpkg : provs, brs) ls
-              _ -> extractMetadata pkg acc ls
 
     getBuildGraph :: [SourcePackage] -> PackageGraph
     getBuildGraph srcPkgs =
@@ -375,33 +326,6 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
        map (fromMaybe (error "node not found in graph") .
             G.lab graph)
 
-    rpmspecParse :: FilePath -> IO (Maybe String)
-    rpmspecParse spec = do
-      (ok, out, err) <- cmdFull "rpmspec" (["-P", "--define", "ghc_version any"] ++ rpmopts ++ [spec]) ""
-      unless (null err) $ warning $ spec +-+ err
-      if ok
-        then return $ Just out
-        else if lenient then return Nothing else exitFailure
-
-    rpmspecProvides :: FilePath -> IO [String]
-    rpmspecProvides spec = do
-      (ok, out, err) <- cmdFull "rpmspec" (["--define", "ghc_version any", "-q", "--provides"] ++ rpmopts ++ [spec]) ""
-      unless (null err) $ warning err
-      if ok
-        then return $ map (head . words) $ lines out
-        else if lenient then return [] else exitFailure
-
-    rpmspecDynBuildRequires :: FilePath -> IO [String]
-    rpmspecDynBuildRequires spec = do
-      cwd <- getCurrentDirectory
-      withTempDir $ \tmpdir -> do
-        (out,err) <- cmdStdErr "rpmbuild" ["-br", "--nodeps", "--define", "_srcrpmdir " ++ tmpdir, cwd </> spec]
-        unless (null err) $ when verbose $ warning err
-        -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
-        case words out of
-          [] -> error' $ spec +-+ "could not generate source rpm for dynamic buildrequires"
-          ws -> cmdLines "rpm" ["-qp", "--requires", last ws]
-
     simplifyDep br =
       case (head . words) br of
         '(':dep -> simplifyDep dep
@@ -410,14 +334,6 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
           ("crate":[crate]) -> Just $ "rust-" ++ replace "/" "+" crate ++ "-devel"
           ("rubygem":[gem]) -> Just $ "rubygem-" ++ gem
           _ -> Just dep
-
-    -- rpmspecBuildRequires :: FilePath -> IO [String]
-    -- rpmspecBuildRequires spec = do
-    --   (ok, out, err) <- cmdFull "rpmspec" (["--define", "ghc_version any", "-q", "--buildrequires"] ++ rpmopts ++ [spec]) ""
-    --   unless (null err) $ warning err
-    --   if ok
-    --     then return $ lines out
-    --     else if lenient then return [] else exitFailure
 
 -- | Alias for createGraph4
 --

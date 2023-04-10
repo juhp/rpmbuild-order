@@ -1,5 +1,5 @@
 Name:             rpmbuild-order
-Version:          0.4.10
+Version:          0.4.11
 License:          BSD3
 License-File:     LICENSE
 Author:           Jens Petersen <petersen@redhat.com>,
@@ -69,6 +69,7 @@ Executable rpmbuild-order
 Library
   Exposed-Modules:  Distribution.RPM.Build.Graph
                     Distribution.RPM.Build.Order
+                    Distribution.RPM.Build.ProvReqs
   Build-Depends: base < 5,
                  case-insensitive,
                  directory >= 1.2.5,
