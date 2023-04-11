@@ -45,7 +45,6 @@ Executable rpmbuild-order
   Build-Depends: base < 5,
                  extra,
                  fgl,
-                 optparse-applicative,
                  rpmbuild-order,
                  simple-cmd-args
   Main-Is:          src/Main.hs
