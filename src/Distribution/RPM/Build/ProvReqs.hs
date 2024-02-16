@@ -1,8 +1,7 @@
 {-# LANGUAGE CPP, OverloadedStrings #-}
 
 module Distribution.RPM.Build.ProvReqs
-  (rpmspecBuildRequires,
-   rpmspecDynBuildRequires,
+  (rpmspecDynBuildRequires,
    rpmspecProvidesBuildRequires)
 where
 
@@ -20,13 +19,6 @@ import System.IO.Extra (withTempDir)
 generateBuildRequires :: FilePath -> IO Bool
 generateBuildRequires =
   egrep_ "^\\(%generate_buildrequires\\|%gometa\\)"
-
-rpmspecBuildRequires :: [String] -> FilePath -> IO [String]
-rpmspecBuildRequires rpmopts spec = do
-  dynbr <- generateBuildRequires spec
-  if dynbr
-    then rpmspecDynBuildRequires spec
-    else cmdLines "rpmspec" (["-q", "--buildrequires"] ++ rpmopts ++ [spec])
 
 rpmspecProvidesBuildRequires :: Bool -> [String] -> FilePath
                              -> IO (Maybe ([String],[String]))
