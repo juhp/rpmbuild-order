@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 
 module Distribution.RPM.Build.ProvReqs
   (rpmspecBuildRequires,
@@ -9,8 +9,9 @@ where
 import Control.Monad (unless)
 import qualified Data.CaseInsensitive as CI
 import Data.List.Extra
-import SimpleCmd (cmdFull, cmdLines, cmdStdErr, egrep_, error', grep, warning,
-                  (+-+))
+import Data.Maybe (mapMaybe)
+import SimpleCmd (cmdFull, cmdLines, cmdMaybe, cmdStdErr, egrep_, error',
+                  grep, warning, (+-+))
 import System.Directory (doesFileExist)
 import System.Exit (exitFailure)
 import System.FilePath
@@ -38,34 +39,45 @@ rpmspecProvidesBuildRequires lenient rpmopts spec = do
       dynprovs <- dynProvides
       prs <- rpmspecProvides lenient rpmopts spec
       return $ dynprovs ++ prs
-    return $ Just (provs,brs)
+    return $ Just (provs, brs)
     else do
     mcontent <- rpmspecParse
-    return $ case mcontent of
-               Nothing -> Nothing
-               Just content ->
-                 let pkg = takeBaseName spec
-                 in Just $ extractMetadata pkg ([],[]) $ lines content
+    case mcontent of
+      Nothing -> return Nothing
+      Just content ->
+        let pkg = takeBaseName spec
+        in fmap Just <$> extractMetadata pkg ([],[]) $ lines content
   where
-    extractMetadata :: FilePath -> ([String],[String]) -> [String] -> ([String],[String])
-    extractMetadata _ acc [] = acc
+    extractMetadata :: FilePath -> ([String],[String]) -> [String]
+                    -> IO ([String],[String])
+    extractMetadata _ (provs,brs) [] =
+      return (provs, mapMaybe simplifyDep brs)
     extractMetadata pkg acc@(provs,brs) (l:ls) =
       let ws = words l in
-        if length ws < 2 then extractMetadata pkg acc ls
-        else case CI.mk (head ws) of
-          "BuildRequires:" ->
-            let br = (head . tail) ws
-            in extractMetadata pkg (provs, br:brs) ls
-          "Name:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
-          "Provides:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
-          "%package" ->
-            let subpkg =
-                  let sub = last ws in
-                    if length ws == 2
-                    then pkg ++ '-' : sub
-                    else sub
-            in extractMetadata pkg (subpkg : provs, brs) ls
-          _ -> extractMetadata pkg acc ls
+        case length ws of
+          0 -> extractMetadata pkg acc ls
+          1 ->
+            if ".pc" `isSuffixOf` head ws
+            then do
+              pcs <- map (\p -> "pkgconfig(" ++ takeBaseName p ++ ")") <$>
+                     egrep "^%{\\(_libdir\\|_datadir\\)}/pkgconfig/.*\\.pc" spec
+              extractMetadata pkg (provs ++ pcs, brs) ls
+            else extractMetadata pkg acc ls
+          _ ->
+            case CI.mk (head ws) of
+              "BuildRequires:" ->
+                let br = (head . tail) ws
+                in extractMetadata pkg (provs, br:brs) ls
+              "Name:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
+              "Provides:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
+              "%package" ->
+                let subpkg =
+                      let sub = last ws in
+                        if length ws == 2
+                        then pkg ++ '-' : sub
+                        else sub
+                in extractMetadata pkg (subpkg : provs, brs) ls
+              _ -> extractMetadata pkg acc ls
 
     rpmspecParse :: IO (Maybe String)
     rpmspecParse = do
@@ -85,6 +97,15 @@ rpmspecProvidesBuildRequires lenient rpmopts spec = do
             [def] -> ["golang(" ++ last (words def) ++ ")"]
             _ -> error' $ "failed to find %goipath in" +-+ spec
       else return []
+
+    simplifyDep br =
+      case (head . words) br of
+        '(':dep -> simplifyDep dep
+        dep -> case splitOn "(" (dropSuffix ")" dep) of
+          ("rpmlib":_) -> Nothing
+          ("crate":[crate]) -> Just $ "rust-" ++ replace "/" "+" crate ++ "-devel"
+          ("rubygem":[gem]) -> Just $ "rubygem-" ++ gem
+          _ -> Just dep
 
 rpmspecDynBuildRequires :: FilePath -> IO [String]
 rpmspecDynBuildRequires spec = do
@@ -110,3 +131,10 @@ rpmspecProvides lenient rpmopts spec = do
   if ok
     then return $ map (head . words) $ lines out
     else if lenient then return [] else exitFailure
+
+#if !MIN_VERSION_simple_cmd(0,2,8)
+egrep :: String -> FilePath -> IO [String]
+egrep regexp file = do
+  mres <- cmdMaybe "grep" ["-e", regexp, file]
+  return $ maybe [] lines mres
+#endif

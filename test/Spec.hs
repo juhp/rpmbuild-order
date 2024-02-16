@@ -17,6 +17,7 @@ main = do
 pkg :: FilePath -> FilePath
 pkg = ("test/pkgs/" ++)
 
+-- FIXME refactor to test both subdir and withCurrentDirectory
 spec :: Version -> Spec
 spec rpmver = do
   describe "sort" $ do
@@ -56,6 +57,10 @@ spec rpmver = do
       dependencySort [pkg "A", pkg "B/", pkg "D1.0"] >>=
       (`shouldBe` [pkg "B/", pkg "D1.0", pkg "A"])
 
+    it "pkgconf/A C" $
+      dependencySort [pkg "pkgconf/A", pkg "C/"] >>=
+      (`shouldBe` [pkg "C/", pkg "pkgconf/A"])
+
     when (rpmver > makeVersion [4,15,0]) $
       it "dynbr A B" $
       dependencySort [pkg "dynbr/A", pkg "B"] >>=
@@ -81,10 +86,14 @@ spec rpmver = do
       cmd "rpmbuild-order" ["sort", pkg "A", pkg "B"] >>=
       (`shouldBe` unwords [pkg "B", pkg "A"])
 
+    it "sort pkgconf/A C" $
+      cmd "rpmbuild-order" ["sort", pkg "pkgconf/A", pkg "C"] >>=
+      (`shouldBe` unwords [pkg "C", pkg "pkgconf/A"])
+
     it "deps A" $
       withCurrentDirectory "test/pkgs" $
       cmd "rpmbuild-order"
-      ["deps", "-x", "dynbr", "-x", "1", "-x", "2", "-x", "C", "A"] >>=
+      ["deps", "-x", "dynbr", "-x", "pkgconf", "-x", "1", "-x", "2", "-x", "C", "A"] >>=
       (`shouldBe` unwords ["B", "A"])
 
 

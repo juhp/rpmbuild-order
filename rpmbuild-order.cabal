@@ -36,6 +36,7 @@ Extra-source-files: rpmbuild-order.1
                     test/pkgs/C/C.spec
                     test/pkgs/D1.0/D1.0.spec
                     test/pkgs/dynbr/A/A.spec
+                    test/pkgs/pkgconf/A/A.spec
 
 source-repository head
   type:     git
