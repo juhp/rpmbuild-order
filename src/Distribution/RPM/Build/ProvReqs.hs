@@ -45,29 +45,27 @@ rpmspecProvidesBuildRequires lenient rpmopts spec = do
     extractMetadata _ (provs,brs) [] =
       return (provs, mapMaybe simplifyDep brs)
     extractMetadata pkg acc@(provs,brs) (l:ls) =
-      let ws = words l in
-        case length ws of
-          0 -> extractMetadata pkg acc ls
-          1 ->
-            if ".pc" `isSuffixOf` head ws
-            then do
-              pcs <- map (\p -> "pkgconfig(" ++ takeBaseName p ++ ")") <$>
-                     egrep "^%{\\(_libdir\\|_datadir\\)}/pkgconfig/.*\\.pc" spec
-              extractMetadata pkg (provs ++ pcs, brs) ls
-            else extractMetadata pkg acc ls
-          _ ->
-            case CI.mk (head ws) of
+      case words l of
+        [] -> extractMetadata pkg acc ls
+        [w] ->
+          if ".pc" `isSuffixOf` w
+          then do
+            pcs <- map (\p -> "pkgconfig(" ++ takeBaseName p ++ ")") <$>
+                   egrep "^%{\\(_libdir\\|_datadir\\)}/pkgconfig/.*\\.pc" spec
+            extractMetadata pkg (provs ++ pcs, brs) ls
+          else extractMetadata pkg acc ls
+        (w:w':ws) ->
+            case CI.mk w of
               "BuildRequires:" ->
-                let br = (head . tail) ws
-                in extractMetadata pkg (provs, br:brs) ls
-              "Name:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
-              "Provides:" -> extractMetadata pkg ((head . tail) ws : provs, brs) ls
+                -- FIXME could be more than one package: parse ws
+                extractMetadata pkg (provs, w':brs) ls
+              "Name:" -> extractMetadata pkg (w' : provs, brs) ls
+              "Provides:" -> extractMetadata pkg (w' : provs, brs) ls
               "%package" ->
                 let subpkg =
-                      let sub = last ws in
-                        if length ws == 2
-                        then pkg ++ '-' : sub
-                        else sub
+                      if null ws
+                      then pkg ++ '-' : w'
+                      else last ws
                 in extractMetadata pkg (subpkg : provs, brs) ls
               _ -> extractMetadata pkg acc ls
 
