@@ -16,9 +16,13 @@ import System.Exit (exitFailure)
 import System.FilePath
 import System.IO.Extra (withTempDir)
 
+generateBuildRequires :: FilePath -> IO Bool
+generateBuildRequires =
+  egrep_ "^\\(%generate_buildrequires\\|%gometa\\)"
+
 rpmspecBuildRequires :: [String] -> FilePath -> IO [String]
 rpmspecBuildRequires rpmopts spec = do
-  dynbr <- egrep_ "^\\(%generate_buildrequires\\|%gometa\\)" spec
+  dynbr <- generateBuildRequires spec
   if dynbr
     then rpmspecDynBuildRequires spec
     else cmdLines "rpmspec" (["-q", "--buildrequires"] ++ rpmopts ++ [spec])
@@ -26,7 +30,7 @@ rpmspecBuildRequires rpmopts spec = do
 rpmspecProvidesBuildRequires :: Bool -> [String] -> FilePath
                              -> IO (Maybe ([String],[String]))
 rpmspecProvidesBuildRequires lenient rpmopts spec = do
-  dynbr <- egrep_ "^\\(%generate_buildrequires\\|%gometa\\)" spec
+  dynbr <- generateBuildRequires spec
   if dynbr
     then do
     brs <- rpmspecDynBuildRequires spec
