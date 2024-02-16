@@ -224,10 +224,10 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
                 let provs' = filter (not . ("(x86-64)" `isSuffixOf`)) provs
                 when verbose $ do
                   warning $ show $ sort provs'
-                  warning $ show $ mapMaybe simplifyDep $ sort brs
+                  warning $ show $ sort brs
                 return $ Just (path,
                                nub provs',
-                               nub (mapMaybe simplifyDep brs) \\ ignoredBRs)
+                               nub brs \\ ignoredBRs)
       where
         -- (dir,specfile)
         findSpec :: IO (Maybe (FilePath,FilePath))
@@ -325,15 +325,6 @@ createGraph4 checkcycles ignoredBRs rpmopts verbose lenient rev mdir paths =
     nodeLabels graph =
        map (fromMaybe (error "node not found in graph") .
             G.lab graph)
-
-    simplifyDep br =
-      case (head . words) br of
-        '(':dep -> simplifyDep dep
-        dep -> case splitOn "(" (dropSuffix ")" dep) of
-          ("rpmlib":_) -> Nothing
-          ("crate":[crate]) -> Just $ "rust-" ++ replace "/" "+" crate ++ "-devel"
-          ("rubygem":[gem]) -> Just $ "rubygem-" ++ gem
-          _ -> Just dep
 
 -- | Alias for createGraph4
 --
