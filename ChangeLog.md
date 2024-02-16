@@ -1,3 +1,9 @@
+# 0.4.11 (2024-02-18)
+- ProvReqs: new module for rpmspec dependency functions
+- ProvReqs: generate pkgconfig provides from %files .pc
+- Graph depsGraph: include package set in potential deps
+- Order: add dependencyLayersRpmOpts
+
 # 0.4.10 (2022-10-28)
 - Graph: add depsGraphDeps which takes a list of possible deps
 - Graph: add topsortGraph (factored out of sortGraph)

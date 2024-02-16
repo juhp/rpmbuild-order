@@ -68,6 +68,8 @@ There are two modules:
 Please see their documentation for more details.
 
 ## Notes and known problems
+0. Handles pkgconfig() provides by grepping .spec for .pc files
+
 1. Given packages A, B, C, where C depends on B, and B depends on A,
 and you call
 

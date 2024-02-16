@@ -6,7 +6,7 @@ Author:           Jens Petersen <petersen@redhat.com>,
                   Henning Thielemann <haskell@henning-thielemann.de>
 Maintainer:       Jens Petersen <petersen@redhat.com>
 Copyright:        2010-2018  Henning Thielemann,
-                  2018-2022 Jens Petersen <petersen@redhat.com>
+                  2018-2024 Jens Petersen <petersen@redhat.com>
 Category:         Distribution
 Homepage:         https://github.com/juhp/rpmbuild-order
 Bug-reports:      https://github.com/juhp/rpmbuild-order/issues
@@ -24,9 +24,9 @@ Description:
   which can affect dependencies. It can also output dependency graphs.
 
   Since version 0.4, a library API is provided.
-Tested-with:       GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2,
-                   GHC == 8.4.4, GHC == 8.6.5, GHC == 8.8.4,
-                   GHC == 8.10.7, GHC == 9.0.2
+Tested-with:       GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5,
+                   GHC == 8.8.4, GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8,
+                   GHC == 9.4.8, GHC == 9.6.4
 Cabal-Version:     1.18
 Build-Type:        Simple
 Extra-doc-files:    README.md TODO ChangeLog.md
