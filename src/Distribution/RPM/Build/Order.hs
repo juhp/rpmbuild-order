@@ -20,6 +20,7 @@ module Distribution.RPM.Build.Order
    dependencySortRpmOpts,
    dependencySortParallel,
    dependencyLayers,
+   dependencyLayersRpmOpts,
    leafPackages,
    independentPackages,
    Components (..),
@@ -56,6 +57,14 @@ dependencySortParallel pkgs = do
 dependencyLayers :: [FilePath] -> IO [[FilePath]]
 dependencyLayers pkgs = do
   graph <- createGraph pkgs
+  return $ packageLayers graph
+
+-- | like dependencyLayers but with rpm options
+--
+-- @since 0.4.11
+dependencyLayersRpmOpts :: [String] -> [FilePath] -> IO [[FilePath]]
+dependencyLayersRpmOpts rpmopts pkgs = do
+  graph <- createGraphRpmOpts rpmopts pkgs
   return $ packageLayers graph
 
 -- | returns the leaves of a set of packages
