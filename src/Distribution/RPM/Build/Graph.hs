@@ -420,7 +420,8 @@ depsGraph :: Bool -- ^ whether to look for reverse dependencies
           -> IO PackageGraph -- ^ dependency graph of the packages
 depsGraph rev rpmopts verbose excludedPkgs ignoredBRs lenient mdir pkgs =
   listDirectory "." >>=
-  depsGraphDeps rev rpmopts verbose excludedPkgs ignoredBRs lenient mdir pkgs
+  depsGraphDeps rev rpmopts verbose excludedPkgs ignoredBRs lenient mdir pkgs .
+  (`union` pkgs)
 
 -- | Given a list of one or more packages and a list of potential dependencies,
 -- return a package dependency graph
