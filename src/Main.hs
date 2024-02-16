@@ -59,11 +59,13 @@ main =
     ignoredBRopts = many (strOptionWith 'I' "ignore-BR" "PKG" "BuildRequires to exclude from graph")
     excludeOpts = many (dropSuffix "/" <$> strOptionWith 'x' "exclude" "PKG" "Package dirs to exclude from graph")
 
-sortPackages :: [String] -> Bool -> Bool -> Components -> Maybe FilePath -> [FilePath] -> IO ()
+sortPackages :: [String] -> Bool -> Bool -> Components -> Maybe FilePath
+             -> [FilePath] -> IO ()
 sortPackages rpmopts verbose lenient opts mdir pkgs = do
   createGraph2 rpmopts verbose lenient True mdir pkgs >>= sortGraph opts
 
-layerPackages :: [String] -> Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
+layerPackages :: [String] -> Bool -> Bool -> Bool -> Maybe FilePath
+              -> [FilePath] -> IO ()
 layerPackages rpmopts verbose lenient combine mdir pkgs = do
   graph <- createGraph2 rpmopts verbose lenient True mdir pkgs
   if combine
@@ -72,7 +74,8 @@ layerPackages rpmopts verbose lenient combine mdir pkgs = do
   where
     printLayers =  putStrLn . unlines . map unwords . packageLayers
 
-chainPackages :: [String] -> Bool -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
+chainPackages :: [String] -> Bool -> Bool -> Bool -> Maybe FilePath
+              -> [FilePath] -> IO ()
 chainPackages rpmopts verbose lenient combine mdir pkgs = do
   graph <- createGraph2 rpmopts verbose lenient True mdir pkgs
   if combine then doChain graph
@@ -82,12 +85,14 @@ chainPackages rpmopts verbose lenient combine mdir pkgs = do
       let chain = intercalate [":"] $ packageLayers graph
       in putStrLn $ unwords chain
 
-leavesPackages :: [String] -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
+leavesPackages :: [String] -> Bool -> Bool -> Maybe FilePath -> [FilePath]
+               -> IO ()
 leavesPackages rpmopts verbose lenient mdir pkgs = do
   graph <- createGraph2 rpmopts verbose lenient True mdir pkgs
   mapM_ putStrLn $ packageLeaves graph
 
-rootPackages :: [String] -> Bool -> Bool -> Maybe FilePath -> [FilePath] -> IO ()
+rootPackages :: [String] -> Bool -> Bool -> Maybe FilePath -> [FilePath]
+             -> IO ()
 rootPackages rpmopts verbose lenient mdir pkgs = do
   graph <- createGraph2 rpmopts verbose lenient True mdir pkgs
   mapM_ putStrLn $ lowestLayer graph
