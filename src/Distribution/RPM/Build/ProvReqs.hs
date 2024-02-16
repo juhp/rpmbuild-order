@@ -51,7 +51,7 @@ rpmspecProvidesBuildRequires lenient rpmopts spec = do
           if ".pc" `isSuffixOf` w
           then do
             pcs <- map (\p -> "pkgconfig(" ++ takeBaseName p ++ ")") <$>
-                   egrep "^%{\\(_libdir\\|_datadir\\)}/pkgconfig/.*\\.pc" spec
+                   egrep "^%{\\?\\(_libdir\\|_datadir\\)}\\?/pkgconfig/.*\\.pc" spec
             extractMetadata pkg (provs ++ pcs, brs) ls
           else extractMetadata pkg acc ls
         (w:w':ws) ->
