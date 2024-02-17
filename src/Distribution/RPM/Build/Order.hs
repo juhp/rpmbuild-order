@@ -84,9 +84,9 @@ sortGraph :: Components -> PackageGraph -> IO ()
 sortGraph opt graph =
   mapM_ (putStrLn . unwords) $
   case opt of
-    Parallel -> intersperse ["\n"]
+    Parallel -> intersperse [""]
     Combine -> id
-    Connected -> intersperse ["\n"]
+    Connected -> intersperse [""]
     Separate -> id
   $ topsortGraph opt graph
 
