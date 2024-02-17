@@ -11,13 +11,16 @@ by Henning Thielemann.
 
 ## Usage
 
+`$ rpmbuild-order --version`
 ```
-$ rpmbuild-order --version
-0.4.10
-$ rpmbuild-order --help
+0.4.11
+```
+`$ rpmbuild-order --help`
+```
 Order packages by build dependencies
 
 Usage: rpmbuild-order [--version] COMMAND
+
   Sort package sources (spec files) in build dependency order
 
 Available options:
@@ -33,7 +36,9 @@ Available commands:
   leaves                   List of the top leaves of package graph
   roots                    List lowest root packages
   render                   Show graph with graphviz
+```
 
+```
 $ rpmbuild-order sort mycore mylib myapp
 mylib mycore myapp
 ```
@@ -48,7 +53,9 @@ Using the rpmbuild-order `deps` and `rdeps` commands the ordered
 dependencies and reverse dependencies of a package can be obtained
 within the current set of checked out package sources.
 ie If you have a directory with packages:
-`pkg1/ pkg2/ lib1/ lib2/ lib3/ misc1/`
+```
+pkg1/ pkg2/ lib1/ lib2/ lib3/ misc1/
+```
 then the output of `rpmbuild-order deps pkg1` might be `lib1 lib3 pkg1`
 for example.
 
