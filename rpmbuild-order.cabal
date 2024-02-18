@@ -26,7 +26,7 @@ Description:
   Since version 0.4, a library API is provided.
 Tested-with:       GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5,
                    GHC == 8.8.4, GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8,
-                   GHC == 9.4.8, GHC == 9.6.4
+                   GHC == 9.4.8, GHC == 9.6.4, GHC == 9.8.1
 Cabal-Version:     1.18
 Build-Type:        Simple
 Extra-doc-files:    README.md TODO ChangeLog.md
@@ -35,8 +35,11 @@ Extra-source-files: rpmbuild-order.1
                     test/pkgs/B/B.spec
                     test/pkgs/C/C.spec
                     test/pkgs/D1.0/D1.0.spec
+                    test/pkgs/cmake/A/A.spec
+                    test/pkgs/cmake/B/B.spec
                     test/pkgs/dynbr/A/A.spec
                     test/pkgs/pkgconf/A/A.spec
+                    test/pkgs/pkgconf/C/C.spec
 
 source-repository head
   type:     git

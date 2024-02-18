@@ -3,6 +3,7 @@
 - ProvReqs: generate pkgconfig and cmake provides from %files (#4)
 - Graph depsGraph: include package set in potential deps
 - Order: add dependencyLayersRpmOpts
+- more tests
 
 # 0.4.10 (2022-10-28)
 - Graph: add depsGraphDeps which takes a list of possible deps
