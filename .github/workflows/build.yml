@@ -27,7 +27,8 @@ jobs:
             ${{ runner.os }}-
       - run: cabal update
       - run: cabal build
-      - run: cabal haddock
+      - if: ${{ matrix.ghc != '8.2' }}
+        run: cabal haddock
       - run: cabal test
       - run: cabal check
       - run: cabal sdist
