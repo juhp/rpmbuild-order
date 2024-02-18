@@ -1,6 +1,6 @@
 # 0.4.11 (2024-02-18)
 - ProvReqs: new module for rpmspec dependency functions
-- ProvReqs: generate pkgconfig provides from %files .pc
+- ProvReqs: generate pkgconfig and cmake provides from %files (#4)
 - Graph depsGraph: include package set in potential deps
 - Order: add dependencyLayersRpmOpts
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Distribution.RPM.Build.ProvReqs
   (rpmspecDynBuildRequires,
@@ -9,12 +9,13 @@ import Control.Monad (unless)
 import qualified Data.CaseInsensitive as CI
 import Data.List.Extra
 import Data.Maybe (mapMaybe)
-import SimpleCmd (cmdFull, cmdLines, cmdMaybe, cmdStdErr, egrep_, error',
+import SimpleCmd (cmdFull, cmdLines, cmdStdErr, egrep_, error',
                   grep, warning, (+-+))
 import System.Directory (doesFileExist)
 import System.Exit (exitFailure)
 import System.FilePath
 import System.IO.Extra (withTempDir)
+import Text.Regex.TDFA ((=~))
 
 generateBuildRequires :: FilePath -> IO Bool
 generateBuildRequires =
@@ -47,13 +48,16 @@ rpmspecProvidesBuildRequires lenient rpmopts spec = do
     extractMetadata pkg acc@(provs,brs) (l:ls) =
       case words l of
         [] -> extractMetadata pkg acc ls
-        [w] ->
-          if ".pc" `isSuffixOf` w
-          then do
-            pcs <- map (\p -> "pkgconfig(" ++ takeBaseName p ++ ")") <$>
-                   egrep "^%{\\?\\(_libdir\\|_datadir\\)}\\?/pkgconfig/.*\\.pc" spec
-            extractMetadata pkg (provs ++ pcs, brs) ls
-          else extractMetadata pkg acc ls
+        [w]
+          | w =~ ("^/usr/(lib(64)?|share)/pkgconfig/.*\\.pc" :: String) ->
+              let pc = metaName "pkgconfig" $ takeBaseName w
+              in extractMetadata pkg (pc : provs, brs) ls
+          | w =~ ("^/usr/(lib(64)?|share)/cmake/[^/]*$" :: String) ->
+              let p = takeFileName w
+                  cm = map (metaName "cmake") $
+                       if lower p == p then [p] else [p, lower p]
+              in extractMetadata pkg (provs ++ cm, brs) ls
+          | otherwise -> extractMetadata pkg acc ls
         (w:w':ws) ->
             case CI.mk w of
               "BuildRequires:" ->
@@ -122,9 +126,6 @@ rpmspecProvides lenient rpmopts spec = do
     then return $ map (head . words) $ lines out
     else if lenient then return [] else exitFailure
 
-#if !MIN_VERSION_simple_cmd(0,2,8)
-egrep :: String -> FilePath -> IO [String]
-egrep regexp file = do
-  mres <- cmdMaybe "grep" ["-e", regexp, file]
-  return $ maybe [] lines mres
-#endif
+metaName :: String -> String -> String
+metaName meta name =
+  meta ++ '(' : name ++ ")"
