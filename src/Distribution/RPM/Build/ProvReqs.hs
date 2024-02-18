@@ -1,8 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+{-|
+This module has commands for reading the Requires and Provides
+from an RPM package spec file.
+-}
+
 module Distribution.RPM.Build.ProvReqs
-  (rpmspecDynBuildRequires,
-   rpmspecProvidesBuildRequires)
+  (rpmspecProvidesBuildRequires)
 where
 
 import Control.Monad (unless)
@@ -21,8 +25,13 @@ generateBuildRequires :: FilePath -> IO Bool
 generateBuildRequires =
   egrep_ "^\\(%generate_buildrequires\\|%gometa\\)"
 
-rpmspecProvidesBuildRequires :: Bool -> [String] -> FilePath
-                             -> IO (Maybe ([String],[String]))
+-- | Get RPM Provides and BuildRequires based on spec file.
+rpmspecProvidesBuildRequires :: Bool -- lenient (allow failure)
+                             -> [String] -- RPM opts
+                             -> FilePath -- spec file
+                             -> IO (Maybe ([String], -- Provides
+                                           [String]  -- BuildRequires
+                                          ))
 rpmspecProvidesBuildRequires lenient rpmopts spec = do
   dynbr <- generateBuildRequires spec
   if dynbr
