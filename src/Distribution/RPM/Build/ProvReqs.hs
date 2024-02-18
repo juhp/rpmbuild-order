@@ -26,11 +26,11 @@ generateBuildRequires =
   egrep_ "^\\(%generate_buildrequires\\|%gometa\\)"
 
 -- | Get RPM Provides and BuildRequires based on spec file.
-rpmspecProvidesBuildRequires :: Bool -- lenient (allow failure)
-                             -> [String] -- RPM opts
-                             -> FilePath -- spec file
-                             -> IO (Maybe ([String], -- Provides
-                                           [String]  -- BuildRequires
+rpmspecProvidesBuildRequires :: Bool -- ^ lenient (allow failure)
+                             -> [String] -- ^ RPM opts
+                             -> FilePath -- ^ spec file
+                             -> IO (Maybe ([String], -- ^ Provides
+                                           [String]  -- ^ BuildRequires
                                           ))
 rpmspecProvidesBuildRequires lenient rpmopts spec = do
   dynbr <- generateBuildRequires spec
