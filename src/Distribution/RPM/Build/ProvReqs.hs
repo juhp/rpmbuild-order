@@ -29,9 +29,8 @@ generateBuildRequires =
 rpmspecProvidesBuildRequires :: Bool -- ^ lenient (allow failure)
                              -> [String] -- ^ RPM opts
                              -> FilePath -- ^ spec file
-                             -> IO (Maybe ([String], -- ^ Provides
-                                           [String]  -- ^ BuildRequires
-                                          ))
+                             -- ghc 8.10 haddock cannot annotate inside type
+                             -> IO (Maybe ([String], [String])) -- ^ (Provs,BRs)
 rpmspecProvidesBuildRequires lenient rpmopts spec = do
   dynbr <- generateBuildRequires spec
   if dynbr
