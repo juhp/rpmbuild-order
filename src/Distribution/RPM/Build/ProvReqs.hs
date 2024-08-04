@@ -15,7 +15,8 @@ import Data.List.Extra
 import Data.Maybe (mapMaybe)
 import SimpleCmd (cmdFull, cmdLines, cmdStdErr, egrep_, error',
                   grep, warning, (+-+))
-import System.Directory (doesFileExist)
+import SimpleCmd.Git (isGitDir)
+import System.Directory (doesFileExist, getCurrentDirectory)
 import System.Exit (exitFailure)
 import System.FilePath
 import System.IO.Extra (withTempDir)
@@ -40,7 +41,7 @@ rpmspecProvidesBuildRequires lenient rpmopts spec = do
       dynprovs <- dynProvides
       prs <- rpmspecProvides lenient rpmopts spec
       return $ dynprovs ++ prs
-    return $ Just (provs, brs)
+    return $ Just (provs, mapMaybe simplifyDep brs)
     else do
     mcontent <- rpmspecParse
     case mcontent of
@@ -110,21 +111,28 @@ rpmspecProvidesBuildRequires lenient rpmopts spec = do
           _ -> Just dep
 
 rpmspecDynBuildRequires :: FilePath -> IO [String]
-rpmspecDynBuildRequires spec = do
+rpmspecDynBuildRequires spec =
   withTempDir $ \tmpdir -> do
-    (out,err) <- cmdStdErr "rpmbuild" ["-br", "--nodeps", "--define", "_srcrpmdir" +-+ tmpdir, spec]
-    -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
-    let errmsg =
-          "failed to generate srpm for dynamic buildrequires for" +-+ spec ++
-          "\n\n" ++ err
-    case words out of
-      [] -> error' errmsg
-      ws -> do
-        let srpm = last ws
-        exists <- doesFileExist srpm
-        if exists
-          then cmdLines "rpm" ["-qp", "--requires", last ws]
-          else error' errmsg
+  sourceopt <- do
+    isgit <- isGitDir "."
+    if isgit
+      then do
+      cwd <- getCurrentDirectory
+      return ["--define", "_sourcedir" +-+ cwd]
+      else return []
+  (out,err) <- cmdStdErr "rpmbuild" $ ["-br", "--nodeps", "--define", "_srcrpmdir" +-+ tmpdir, spec] ++ sourceopt
+  -- Wrote: /current/dir/SRPMS/name-version-release.buildreqs.nosrc.rpm
+  let errmsg =
+        "failed to generate srpm for dynamic buildrequires for" +-+ spec ++
+        "\n\n" ++ err
+  case words out of
+    [] -> error' errmsg
+    ws -> do
+      let srpm = last ws
+      exists <- doesFileExist srpm
+      if exists
+        then cmdLines "rpm" ["-qp", "--requires", last ws]
+        else error' errmsg
 
 rpmspecProvides :: Bool -> [String] -> FilePath -> IO [String]
 rpmspecProvides lenient rpmopts spec = do
