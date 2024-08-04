@@ -30,8 +30,7 @@ Tested-with:       GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5,
 Cabal-Version:     1.18
 Build-Type:        Simple
 Extra-doc-files:    README.md TODO ChangeLog.md
-Extra-source-files: rpmbuild-order.1
-                    test/pkgs/A/A.spec
+Extra-source-files: test/pkgs/A/A.spec
                     test/pkgs/B/B.spec
                     test/pkgs/C/C.spec
                     test/pkgs/D1.0/D1.0.spec
