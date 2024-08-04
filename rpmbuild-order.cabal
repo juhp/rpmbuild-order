@@ -80,6 +80,7 @@ Library
                  fgl >= 5.5.4,
                  graphviz,
                  regex-tdfa,
+                 safe,
                  simple-cmd >= 0.2.3
   HS-Source-Dirs:      src
   default-language:    Haskell2010

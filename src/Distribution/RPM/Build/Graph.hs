@@ -432,7 +432,7 @@ depsGraphDeps rev rpmopts verbose excludedPkgs ignoredBRs lenient mdir pkgs deps
   unlessM (and <$> mapM doesDirectoryExist pkgs) $
     errorWithoutStackTrace "Please use package directory paths"
   -- filter out dotfiles
-  createGraph3 ignoredBRs rpmopts verbose lenient (not rev) mdir (filter (\d -> d `notElem` excludedPkgs && head d /= '.') deps) >>=
+  createGraph3 ignoredBRs rpmopts verbose lenient (not rev) mdir (filter (\d -> d `notElem` excludedPkgs && not ("." `isPrefixOf` d)) deps) >>=
     createGraph2 rpmopts verbose lenient True mdir . dependencyNodes pkgs
 
 -- | Used to control the output from sortGraph

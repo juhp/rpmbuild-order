@@ -13,6 +13,7 @@ import Control.Monad (unless)
 import qualified Data.CaseInsensitive as CI
 import Data.List.Extra
 import Data.Maybe (mapMaybe)
+import Safe (headMay)
 import SimpleCmd (cmdFull, cmdLines, cmdStdErr, egrep_, error',
                   grep, warning, (+-+))
 import SimpleCmd.Git (isGitDir)
@@ -102,13 +103,17 @@ rpmspecProvidesBuildRequires lenient rpmopts spec = do
       else return []
 
     simplifyDep br =
-      case (head . words) br of
-        '(':dep -> simplifyDep dep
-        dep -> case splitOn "(" (dropSuffix ")" dep) of
-          ("rpmlib":_) -> Nothing
-          ("crate":[crate]) -> Just $ "rust-" ++ replace "/" "+" crate ++ "-devel"
-          ("rubygem":[gem]) -> Just $ "rubygem-" ++ gem
-          _ -> Just dep
+      case (headMay . words) br of
+        Nothing -> Nothing
+        Just pri ->
+          case pri of
+            '(':dep -> simplifyDep dep
+            dep ->
+              case splitOn "(" (dropSuffix ")" dep) of
+                ("rpmlib":_) -> Nothing
+                ("crate":[crate]) -> Just $ "rust-" ++ replace "/" "+" crate ++ "-devel"
+                ("rubygem":[gem]) -> Just $ "rubygem-" ++ gem
+                _ -> Just dep
 
 rpmspecDynBuildRequires :: FilePath -> IO [String]
 rpmspecDynBuildRequires spec =
@@ -139,7 +144,7 @@ rpmspecProvides lenient rpmopts spec = do
   (ok, out, err) <- cmdFull "rpmspec" (["-q", "--provides"] ++ rpmopts ++ [spec]) ""
   unless (null err) $ warning err
   if ok
-    then return $ map (head . words) $ lines out
+    then return $ map (fst . word1) $ lines out
     else if lenient then return [] else exitFailure
 
 metaName :: String -> String -> String
