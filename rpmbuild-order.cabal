@@ -1,5 +1,5 @@
 Name:             rpmbuild-order
-Version:          0.4.11
+Version:          0.4.12
 License:          BSD3
 License-File:     LICENSE
 Author:           Jens Petersen <petersen@redhat.com>,
@@ -26,7 +26,7 @@ Description:
   Since version 0.4, a library API is provided.
 Tested-with:       GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5,
                    GHC == 8.8.4, GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8,
-                   GHC == 9.4.8, GHC == 9.6.4, GHC == 9.8.1
+                   GHC == 9.4.8, GHC == 9.6.6, GHC == 9.8.2
 Cabal-Version:     1.18
 Build-Type:        Simple
 Extra-doc-files:    README.md TODO ChangeLog.md

@@ -1,3 +1,8 @@
+# 0.4.12 (2024-08-04)
+- fix ordering of rust crates and rubygems
+  by mapping their dynamic BRs to package names
+- drop the manpage generated from --help
+
 # 0.4.11 (2024-02-18)
 - ProvReqs: new module for rpmspec dependency functions
 - ProvReqs: generate pkgconfig and cmake provides from %files (#4)

@@ -12,10 +12,12 @@ by Henning Thielemann.
 ## Usage
 
 `$ rpmbuild-order --version`
+
 ```
-0.4.11
+0.4.12
 ```
 `$ rpmbuild-order --help`
+
 ```
 Order packages by build dependencies
 
