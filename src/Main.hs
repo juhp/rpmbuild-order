@@ -28,7 +28,7 @@ main =
   simpleCmdArgs (Just version) "Order packages by build dependencies"
   "Sort package sources (spec files) in build dependency order" $
   subcommands
-  [ Subcommand "sort" "sort packages" $
+  [ Subcommand "sort" "sort packages in build order" $
     sortPackages <$> rpmOpts <*> verboseOpt <*> lenientOpt <*> componentsOpt <*> subdirOpt <*> pkgArgs
   , Subcommand "deps" "sort dependencies in neighbouring package dirs" $
     depsPackages False <$> rpmOpts <*> verboseOpt <*> excludeOpts <*> ignoredBRopts <*> lenientOpt <*> combineOpt <*> subdirOpt <*> pkgArgs
