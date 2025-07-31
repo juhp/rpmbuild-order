@@ -22,6 +22,8 @@ B development files.
 
 %files
 
+%files devel
+
 %changelog
 * Wed Jul 29 13:38:27 +08 2020 Jens Petersen <petersen@redhat.com>
 -
