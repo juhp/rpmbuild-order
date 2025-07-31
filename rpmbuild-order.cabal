@@ -1,12 +1,12 @@
 Name:             rpmbuild-order
-Version:          0.4.12
+Version:          0.4.13
 License:          BSD3
 License-File:     LICENSE
 Author:           Jens Petersen <petersen@redhat.com>,
                   Henning Thielemann <haskell@henning-thielemann.de>
 Maintainer:       Jens Petersen <petersen@redhat.com>
 Copyright:        2010-2018  Henning Thielemann,
-                  2018-2024 Jens Petersen <petersen@redhat.com>
+                  2018-2025 Jens Petersen <petersen@redhat.com>
 Category:         Distribution
 Homepage:         https://github.com/juhp/rpmbuild-order
 Bug-reports:      https://github.com/juhp/rpmbuild-order/issues
