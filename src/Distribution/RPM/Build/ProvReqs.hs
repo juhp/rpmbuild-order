@@ -48,40 +48,41 @@ rpmspecProvidesBuildRequires lenient rpmopts spec = do
     case mcontent of
       Nothing -> return Nothing
       Just content ->
-        let pkg = takeBaseName spec
-        in fmap Just <$> extractMetadata pkg ([],[]) $ lines content
+        fmap Just <$> extractMetadata ([],[]) $ lines content
   where
-    extractMetadata :: FilePath -> ([String],[String]) -> [String]
+    pkg = takeBaseName spec
+
+    extractMetadata :: ([String],[String]) -> [String]
                     -> IO ([String],[String])
-    extractMetadata _ (provs,brs) [] =
+    extractMetadata (provs,brs) [] =
       return (provs, mapMaybe simplifyDep brs)
-    extractMetadata pkg acc@(provs,brs) (l:ls) =
+    extractMetadata acc@(provs,brs) (l:ls) =
       case words l of
-        [] -> extractMetadata pkg acc ls
+        [] -> extractMetadata acc ls
         [w]
           | w =~ ("^/usr/(lib(64)?|share)/pkgconfig/.*\\.pc" :: String) ->
               let pc = metaName "pkgconfig" $ takeBaseName w
-              in extractMetadata pkg (pc : provs, brs) ls
+              in extractMetadata (pc : provs, brs) ls
           | w =~ ("^/usr/(lib(64)?|share)/cmake/[^/]*/?$" :: String) ->
               let p = takeFileName $ dropTrailingPathSeparator w
                   cm = map (metaName "cmake") $
                        if lower p == p then [p] else [p, lower p]
-              in extractMetadata pkg (provs ++ cm, brs) ls
-          | otherwise -> extractMetadata pkg acc ls
+              in extractMetadata (provs ++ cm, brs) ls
+          | otherwise -> extractMetadata acc ls
         (w:w':ws) ->
             case CI.mk w of
               "BuildRequires:" ->
                 -- FIXME could be more than one package: parse ws
-                extractMetadata pkg (provs, w':brs) ls
-              "Name:" -> extractMetadata pkg (w' : provs, brs) ls
-              "Provides:" -> extractMetadata pkg (w' : provs, brs) ls
+                extractMetadata (provs, w':brs) ls
+              "Name:" -> extractMetadata (w' : provs, brs) ls
+              "Provides:" -> extractMetadata (w' : provs, brs) ls
               "%package" ->
                 let subpkg =
                       if null ws
                       then pkg ++ '-' : w'
                       else last ws
-                in extractMetadata pkg (subpkg : provs, brs) ls
-              _ -> extractMetadata pkg acc ls
+                in extractMetadata (subpkg : provs, brs) ls
+              _ -> extractMetadata acc ls
 
     rpmspecParse :: IO (Maybe String)
     rpmspecParse = do
