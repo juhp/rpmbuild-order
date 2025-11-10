@@ -1,7 +1,7 @@
 # 0.4.13 (2025-11-10)
 - ProvReqs: handle cmake directories as used by KDE (#5)
+- ProvReqs: create python3dist dynamic provides (#6)
 - depsGraphDeps bugfix: include the packages within the deps graphs
-- get rid of head warnings
 
 # 0.4.12 (2024-08-04)
 - fix ordering of rust crates and rubygems

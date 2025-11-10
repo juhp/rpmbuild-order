@@ -93,15 +93,17 @@ rpmspecProvidesBuildRequires lenient rpmopts spec = do
         else if lenient then return Nothing else exitFailure
 
     dynProvides :: IO [String]
-    dynProvides =
-      if "golang-" `isPrefixOf` takeBaseName spec
-      then do
-        macro <- grep "%global goipath" spec
-        return $
-          case macro of
-            [def] -> ["golang(" ++ last (words def) ++ ")"]
-            _ -> error' $ "failed to find %goipath in" +-+ spec
-      else return []
+    dynProvides
+      | "python-" `isPrefixOf` pkg = do
+          let dist = dropPrefix "python-" pkg
+          return ["python3dist(" ++ dist ++ ")"]
+      | "golang-" `isPrefixOf` pkg = do
+          macro <- grep "%global goipath" spec
+          return $
+            case macro of
+              [def] -> ["golang(" ++ last (words def) ++ ")"]
+              _ -> error' $ "failed to find %goipath in" +-+ spec
+      | otherwise = return []
 
     simplifyDep br =
       case (headMay . words) br of
