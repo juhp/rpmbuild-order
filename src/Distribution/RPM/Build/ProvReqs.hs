@@ -41,7 +41,7 @@ rpmspecProvidesBuildRequires lenient rpmopts spec = do
     provs <- do
       dynprovs <- dynProvides
       prs <- rpmspecProvides lenient rpmopts spec
-      return $ dynprovs ++ prs
+      return $ addPython3DistProvides (dynprovs ++ prs)
     return $ Just (provs, mapMaybe simplifyDep brs)
     else do
     mcontent <- rpmspecParse
@@ -54,7 +54,7 @@ rpmspecProvidesBuildRequires lenient rpmopts spec = do
     extractMetadata :: FilePath -> ([String],[String]) -> [String]
                     -> IO ([String],[String])
     extractMetadata _ (provs,brs) [] =
-      return (provs, mapMaybe simplifyDep brs)
+      return (addPython3DistProvides provs, mapMaybe simplifyDep brs)
     extractMetadata pkg acc@(provs,brs) (l:ls) =
       case words l of
         [] -> extractMetadata pkg acc ls
@@ -150,3 +150,18 @@ rpmspecProvides lenient rpmopts spec = do
 metaName :: String -> String -> String
 metaName meta name =
   meta ++ '(' : name ++ ")"
+
+-- Add python3dist(<name>) provides based on Name/subpackages like python3-<name>
+addPython3DistProvides :: [String] -> [String]
+addPython3DistProvides provs =
+  nub $ provs ++ mapMaybe toPyDist provs
+  where
+    toPyDist p
+      | "python3-" `isPrefixOf` p = mk (drop 8 p)
+      | "python-"  `isPrefixOf` p = mk (drop 7 p)
+      | otherwise = Nothing
+    mk n
+      | isDocLike n = Nothing
+      | otherwise   = Just $ "python3dist(" ++ n ++ ")"
+    isDocLike n = any (`isSuffixOf` n)
+      ["-doc","-devel","-debug","-debuginfo","-debugsource","-tests","-test","-examples","-common"]
