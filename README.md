@@ -14,7 +14,7 @@ by Henning Thielemann.
 `$ rpmbuild-order --version`
 
 ```
-0.4.12
+0.4.13
 ```
 `$ rpmbuild-order --help`
 
@@ -30,7 +30,7 @@ Available options:
   --version                Show version
 
 Available commands:
-  sort                     sort packages
+  sort                     sort packages in build order
   deps                     sort dependencies in neighbouring package dirs
   rdeps                    sort dependents in neighbouring package dirs
   layers                   ordered output of dependency layers
