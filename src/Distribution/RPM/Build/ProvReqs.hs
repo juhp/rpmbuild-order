@@ -62,8 +62,8 @@ rpmspecProvidesBuildRequires lenient rpmopts spec = do
           | w =~ ("^/usr/(lib(64)?|share)/pkgconfig/.*\\.pc" :: String) ->
               let pc = metaName "pkgconfig" $ takeBaseName w
               in extractMetadata pkg (pc : provs, brs) ls
-          | w =~ ("^/usr/(lib(64)?|share)/cmake/[^/]*$" :: String) ->
-              let p = takeFileName w
+          | w =~ ("^/usr/(lib(64)?|share)/cmake/[^/]*/?$" :: String) ->
+              let p = takeFileName $ dropTrailingPathSeparator w
                   cm = map (metaName "cmake") $
                        if lower p == p then [p] else [p, lower p]
               in extractMetadata pkg (provs ++ cm, brs) ls
